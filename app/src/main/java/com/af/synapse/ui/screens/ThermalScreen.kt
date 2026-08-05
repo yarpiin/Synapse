@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -25,6 +26,7 @@ import com.af.synapse.data.ThermalManager
 import com.af.synapse.ui.components.SettingsSeekBar
 import com.af.synapse.ui.components.SettingsSwitch
 import com.af.synapse.ui.theme.PixelBlue
+import java.util.Locale
 
 @Composable
 fun ThermalScreen(isScrolling: () -> Boolean = { false }) {
@@ -130,14 +132,12 @@ fun RowScope.TemperatureTileOptimized(sensor: ThermalManager.TemperatureSensor) 
             }
             .padding(12.dp)
     ) {
-        val translatedLabel = when (sensor.label) {
-            "SoC Peak" -> stringResource(R.string.summary_peak)
-            "SoC (Avg)" -> stringResource(R.string.summary_avg)
+        val label = when (sensor.label) {
             "Battery" -> "Bateria"
             else -> sensor.label
         }
         Text(
-            text = translatedLabel.uppercase(),
+            text = label.uppercase(),
             fontSize = 9.sp,
             fontWeight = FontWeight.Black,
             color = PixelBlue,
@@ -145,7 +145,7 @@ fun RowScope.TemperatureTileOptimized(sensor: ThermalManager.TemperatureSensor) 
         )
         
         Text(
-            text = "${sensor.value.toInt()}°C",
+            text = String.format(Locale.US, "%.1f°C", sensor.value),
             fontSize = 24.sp,
             fontWeight = FontWeight.Black,
             fontStyle = FontStyle.Italic,

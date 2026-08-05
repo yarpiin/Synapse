@@ -65,8 +65,8 @@ fun IoScreen() {
             title = stringResource(R.string.io_read_ahead),
             description = stringResource(R.string.io_read_ahead_desc),
             path = "/sys/block/$block/queue/read_ahead_kb",
-            min = 0f, max = 2048f, unit = " KB",
-            step = 128f
+            min = 0f, max = 1024f, unit = " KB",
+            step = 32f
         )
 
         // Scheduler Selection

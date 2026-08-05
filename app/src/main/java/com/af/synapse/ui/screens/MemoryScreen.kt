@@ -34,33 +34,40 @@ import kotlinx.coroutines.withContext
 @Composable
 fun MemoryScreen(isScrolling: () -> Boolean = { false }) {
     val ramStats by MonitorManager.ramStats.collectAsState()
+    val globalZramStats by MonitorManager.zramStats.collectAsState()
     
-    var zramStats by remember { mutableStateOf(MemoryManager.ZRamStats(0, 0, 0)) }
     var zramAlgo by remember { mutableStateOf("") }
     val zramAlgos = remember { mutableStateListOf<String>() }
     
     var isApplyingZram by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
+    // Screen-local stats initialized to current global value
+    var localZramStats by remember { mutableStateOf(MonitorManager.zramStats.value) }
+    
+    // Sync local with global if not applying
+    LaunchedEffect(globalZramStats) {
+        if (!isApplyingZram) {
+            localZramStats = globalZramStats
+        }
+    }
+
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
+            // High priority refresh for this screen
+            val stats = MemoryManager.getZRamStats()
             val algos = MemoryManager.getZRamCompAlgorithms()
             val currentAlgo = MemoryManager.getCurrentZRamAlgorithm()
             withContext(Dispatchers.Main) {
+                localZramStats = stats
                 zramAlgos.clear()
                 zramAlgos.addAll(algos)
                 zramAlgo = currentAlgo
             }
-            
-            while (true) {
-                if (!isScrolling()) {
-                    val stats = MemoryManager.getZRamStats()
-                    withContext(Dispatchers.Main) { zramStats = stats }
-                }
-                delay(60000)
-            }
         }
     }
+
+    val displayZram = localZramStats ?: MemoryManager.ZRamStats(0, 0, 0)
 
     if (isApplyingZram) {
         AlertDialog(
@@ -113,7 +120,7 @@ fun MemoryScreen(isScrolling: () -> Boolean = { false }) {
             )
             Spacer(modifier = Modifier.height(12.dp))
             LinearProgressIndicator(
-                progress = { (zramStats.usedPercent / 100f).coerceIn(0f, 1f) },
+                progress = { (displayZram.usedPercent / 100f).coerceIn(0f, 1f) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(24.dp)
@@ -123,24 +130,25 @@ fun MemoryScreen(isScrolling: () -> Boolean = { false }) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(text = "${zramStats.usedMb} MB", fontSize = 12.sp, fontStyle = FontStyle.Italic)
-                Text(text = "${zramStats.totalMb} MB", fontSize = 12.sp, fontStyle = FontStyle.Italic)
+                Text(text = "${displayZram.usedMb} MB", fontSize = 12.sp, fontStyle = FontStyle.Italic)
+                Text(text = "${displayZram.totalMb} MB", fontSize = 12.sp, fontStyle = FontStyle.Italic)
             }
         }
 
         HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
 
         DynamicZRamSeekBar(
-            currentValueMb = zramStats.totalMb,
+            currentValueMb = displayZram.totalMb,
             maxMb = 8192L,
             onValueChange = { newValueMb ->
                 scope.launch {
                     isApplyingZram = true
                     withContext(Dispatchers.IO) {
                         MemoryManager.setZRamSize(newValueMb.toInt())
+                        delay(4000) 
                         val newStats = MemoryManager.getZRamStats()
                         withContext(Dispatchers.Main) {
-                            zramStats = newStats
+                            localZramStats = newStats
                             isApplyingZram = false
                         }
                     }
@@ -155,10 +163,17 @@ fun MemoryScreen(isScrolling: () -> Boolean = { false }) {
             options = zramAlgos,
             onSelect = { algo ->
                 scope.launch {
-                    withContext(Dispatchers.IO) { MemoryManager.setZRamAlgorithm(algo) }
-                    zramAlgo = algo
-                    val newStats = withContext(Dispatchers.IO) { MemoryManager.getZRamStats() }
-                    zramStats = newStats
+                    isApplyingZram = true
+                    withContext(Dispatchers.IO) {
+                        MemoryManager.setZRamAlgorithm(algo)
+                        delay(4000)
+                        val newStats = MemoryManager.getZRamStats()
+                        withContext(Dispatchers.Main) {
+                            zramAlgo = algo
+                            localZramStats = newStats
+                            isApplyingZram = false
+                        }
+                    }
                 }
             }
         )

@@ -4,13 +4,15 @@
 
     <!-- Navigation -->
     <string name="nav_summary">Summary</string>
+    <string name="nav_battery">Battery</string>
     <string name="nav_cpu_silver">Silver Cluster</string>
     <string name="nav_cpu_gold">Gold Cluster</string>
     <string name="nav_cpu_perf">Performance Cluster</string>
     <string name="nav_gpu">GPU Control</string>
-    <string name="nav_thermal">Thermal</string>
+    <string name="nav_thermal">Temperature</string>
     <string name="nav_memory">Memory</string>
     <string name="nav_io">I/O Scheduler</string>
+    <string name="nav_voltage">CPU Voltage</string>
     <string name="nav_advanced">Advanced</string>
     <string name="nav_misc">Miscellaneous</string>
     <string name="nav_profiles">Profiles</string>
@@ -33,6 +35,18 @@
     <string name="summary_thermal">Thermal (SoC)</string>
     <string name="summary_peak">Peak</string>
     <string name="summary_avg">Average</string>
+    <string name="summary_physical_ram">Physical RAM</string>
+    <string name="summary_usage">Usage</string>
+    <string name="summary_free_mem">Free Memory</string>
+    <string name="summary_power_batt">Power / Battery</string>
+    <string name="summary_soc_temp">SoC Temperature</string>
+    <string name="summary_batt_temp">Battery Temperature</string>
+    <string name="summary_discharge">Discharge Rate</string>
+    <string name="summary_charge">Charge Rate</string>
+    <string name="summary_charge_type">Charge Type</string>
+    <string name="summary_charge_info">Charge Info</string>
+    <string name="summary_renderer">Renderer</string>
+    <string name="summary_developer">Developer</string>
 
     <!-- CPU Screen -->
     <string name="cpu_min_freq">Min Frequency</string>
@@ -88,6 +102,39 @@
     <string name="io_crc">Software CRC Control</string>
     <string name="io_crc_desc">Disabling software Cyclic Redundancy Check can improve write performance by skipping data verification overhead.</string>
 
+    <!-- Voltage Screen -->
+    <string name="volt_desc">Decreasing voltages will lower heat and power consumption of the CPU. Increasing it on overclocked frequencies improves stability. Too low voltages may cause instability and freezes.</string>
+    <string name="volt_global">CPU Global Voltage</string>
+    <string name="volt_freq">CPU Frequency Voltage</string>
+    <string name="volt_core">Core Voltages</string>
+    <string name="volt_iva">IVA Voltages</string>
+    <string name="volt_reg">Regulator Voltages</string>
+
+    <!-- Battery Screen -->
+    <string name="batt_level">Battery Level</string>
+    <string name="batt_temp">Temp</string>
+    <string name="batt_volt">Voltage</string>
+    <string name="batt_ctrl">Charging Control</string>
+    <string name="batt_fast_charge">USB Fast Charge</string>
+    <string name="batt_fast_charge_desc">Allow drawing more current from USB ports to speed up charging.</string>
+    <string name="batt_enabled">Charging Enabled</string>
+    <string name="batt_enabled_desc">Master switch to enable or disable battery charging.</string>
+    <string name="batt_health_info">Health Information</string>
+    <string name="batt_live_charging">Live Power Info</string>
+    <string name="batt_speed">Power</string>
+    <string name="batt_current">Current</string>
+    <string name="batt_time_left">Time Left</string>
+    <string name="batt_health_status">Health Status</string>
+    <string name="batt_cycles">Cycle Count</string>
+    <string name="batt_cap_design">Design Capacity</string>
+    <string name="batt_cap_actual">Current Capacity</string>
+    <string name="batt_overall_health">Overall Health</string>
+    <string name="batt_pixel_limits">Pixel Charging Limits</string>
+    <string name="batt_stop_level">Stop Charging Level</string>
+    <string name="batt_stop_level_desc">Stop charging when battery reaches this percentage to prolong lifespan.</string>
+    <string name="batt_start_level">Start Charging Level</string>
+    <string name="batt_start_level_desc">Resume charging only when battery drops below this percentage.</string>
+
     <!-- Profiles -->
     <string name="prof_desc">Manage configuration profiles to quickly switch between performance, balanced, and battery-saving modes.</string>
     <string name="prof_create">Create New Profile</string>
@@ -96,7 +143,7 @@
     <string name="prof_name_hint">Profile Name</string>
     <string name="prof_apply">Apply</string>
     <string name="prof_delete">Delete</string>
-    <string name="zram_applying">Configuring Z-RAM, please wait…</string>
+    <string name="zram_applying">Stosowanie ustawień Z-RAM, proszę czekać…\n(Może to potrwać kilka sekund)</string>
 
     <!-- Settings -->
     <string name="settings_desc">Configure app behavior and global application settings.</string>
@@ -113,6 +160,7 @@
     <string name="about_dev">Developer: yarpiin</string>
     <string name="about_support">If you like my work:</string>
     <string name="about_donate">Donate via PayPal</string>
+
     <!-- Advanced Screen -->
     <string name="adv_desc">Miscellaneous advanced kernel settings. Do not change them unless you know what you are doing.</string>
     <string name="adv_krait">Krait C-States</string>

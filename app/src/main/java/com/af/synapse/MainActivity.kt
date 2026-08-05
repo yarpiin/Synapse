@@ -1,14 +1,18 @@
 package com.af.synapse
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -19,35 +23,52 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.af.synapse.data.CpuManager
 import com.af.synapse.data.GpuManager
+import com.af.synapse.data.VoltageManager
 import com.af.synapse.ui.screens.*
 import com.af.synapse.ui.theme.SynapseTheme
 import com.topjohnwu.superuser.Shell
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
         com.af.synapse.data.SettingsStore.init(this)
-        com.af.synapse.data.MonitorManager.startMonitoring()
-
+        
+        // Initialize Shell with Root request
         Shell.setDefaultBuilder(Shell.Builder.create()
             .setFlags(Shell.FLAG_REDIRECT_STDERR)
-            .setTimeout(10)
+            .setTimeout(20)
         )
+        
+        // Background check for root
+        val scope = CoroutineScope(Dispatchers.IO)
+        scope.launch {
+            val isRoot = Shell.getShell().isRoot
+            withContext(Dispatchers.Main) {
+                if (!isRoot) {
+                    Toast.makeText(this@MainActivity, "Root access required!", Toast.LENGTH_LONG).show()
+                }
+                com.af.synapse.data.MonitorManager.startMonitoring()
+            }
+        }
 
         setContent {
             var themeMode by remember { mutableIntStateOf(com.af.synapse.data.SettingsStore.getThemeMode()) }
 
             SynapseTheme(themeOverride = themeMode) {
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-                val scope = rememberCoroutineScope()
+                val coroutineScope = rememberCoroutineScope()
                 
                 val clusters = remember { CpuManager.getAvailableClusters() }
                 val isGpuAvailable = remember { GpuManager.getGpuPath() != null }
                 val isAdvancedAvailable = remember { com.af.synapse.data.AdvancedManager.isAdvancedAvailable() }
+                val isVoltageAvailable = remember { VoltageManager.isVoltageAvailable() }
                 
-                val menuItems = remember(clusters, isGpuAvailable, isAdvancedAvailable) {
+                val menuItems = remember(clusters, isGpuAvailable, isAdvancedAvailable, isVoltageAvailable) {
                     val items = mutableListOf<NavigationItem>()
                     items.add(NavigationItem(R.string.nav_summary, Icons.Default.Info, 0, ScreenType.SUMMARY))
                     
@@ -70,9 +91,14 @@ class MainActivity : ComponentActivity() {
                         items.add(NavigationItem(R.string.nav_gpu, Icons.Default.Refresh, index++, ScreenType.GPU))
                     }
 
+                    items.add(NavigationItem(R.string.nav_battery, Icons.Default.BatteryChargingFull, index++, ScreenType.BATTERY))
                     items.add(NavigationItem(R.string.nav_thermal, Icons.Default.Warning, index++, ScreenType.THERMAL))
                     items.add(NavigationItem(R.string.nav_memory, Icons.Default.Menu, index++, ScreenType.MEMORY))
-                    items.add(NavigationItem(R.string.nav_io, Icons.Default.Share, index++, ScreenType.IO))
+                    items.add(NavigationItem(R.string.nav_io, Icons.AutoMirrored.Filled.Send, index++, ScreenType.IO))
+
+                    if (isVoltageAvailable) {
+                        items.add(NavigationItem(R.string.nav_voltage, Icons.Default.Bolt, index++, ScreenType.VOLTAGE))
+                    }
 
                     if (isAdvancedAvailable) {
                         items.add(NavigationItem(R.string.nav_advanced, Icons.Default.Star, index++, ScreenType.ADVANCED))
@@ -95,34 +121,41 @@ class MainActivity : ComponentActivity() {
                             drawerContainerColor = MaterialTheme.colorScheme.background,
                             drawerShape = RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp)
                         ) {
-                            Spacer(modifier = Modifier.height(24.dp))
-                            menuItems.forEach { item ->
-                                NavigationDrawerItem(
-                                    label = { 
-                                        Text(
-                                            stringResource(item.titleRes),
-                                            fontWeight = FontWeight.SemiBold,
-                                            letterSpacing = 0.5.sp
-                                        ) 
-                                    },
-                                    selected = pagerState.currentPage == item.index,
-                                    onClick = {
-                                        scope.launch {
-                                            pagerState.animateScrollToPage(item.index)
-                                            drawerState.close()
-                                        }
-                                    },
-                                    icon = { Icon(item.icon, contentDescription = null, modifier = Modifier.size(22.dp)) },
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = NavigationDrawerItemDefaults.colors(
-                                        selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                Spacer(modifier = Modifier.height(24.dp))
+                                menuItems.forEach { item ->
+                                    NavigationDrawerItem(
+                                        label = { 
+                                            Text(
+                                                stringResource(item.titleRes),
+                                                fontWeight = FontWeight.SemiBold,
+                                                letterSpacing = 0.5.sp
+                                            ) 
+                                        },
+                                        selected = pagerState.currentPage == item.index,
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                pagerState.animateScrollToPage(item.index)
+                                                drawerState.close()
+                                            }
+                                        },
+                                        icon = { Icon(item.icon, contentDescription = null, modifier = Modifier.size(22.dp)) },
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = NavigationDrawerItemDefaults.colors(
+                                            selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     )
-                                )
+                                }
+                                Spacer(modifier = Modifier.height(24.dp))
                             }
                         }
                     }
@@ -142,9 +175,9 @@ class MainActivity : ComponentActivity() {
                                     ) 
                                 },
                                 navigationIcon = {
-                                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                    IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
                                         Icon(
-                                            Icons.Default.Menu, 
+                                            Icons.Default.Menu,
                                             contentDescription = "Menu",
                                             modifier = Modifier.size(26.dp)
                                         )
@@ -172,9 +205,11 @@ class MainActivity : ComponentActivity() {
                                 when (item?.type) {
                                     ScreenType.SUMMARY -> SummaryScreen()
                                     ScreenType.GPU -> GpuScreen(isScrolling = isScrollingLambda)
+                                    ScreenType.BATTERY -> BatteryScreen(isScrolling = isScrollingLambda)
                                     ScreenType.THERMAL -> ThermalScreen()
                                     ScreenType.MEMORY -> MemoryScreen(isScrolling = isScrollingLambda)
                                     ScreenType.IO -> IoScreen()
+                                    ScreenType.VOLTAGE -> VoltageScreen()
                                     ScreenType.ADVANCED -> AdvancedScreen()
                                     ScreenType.MISC -> MiscScreen()
                                     ScreenType.PROFILES -> ProfileScreen()
@@ -199,5 +234,5 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-enum class ScreenType { SUMMARY, CPU_CLUSTER, GPU, THERMAL, MEMORY, IO, ADVANCED, MISC, PROFILES, SETTINGS, ABOUT }
+enum class ScreenType { SUMMARY, CPU_CLUSTER, GPU, BATTERY, THERMAL, MEMORY, IO, VOLTAGE, ADVANCED, MISC, PROFILES, SETTINGS, ABOUT }
 data class NavigationItem(val titleRes: Int, val icon: ImageVector, val index: Int, val type: ScreenType, val policyId: Int? = null, val descRes: Int? = null)

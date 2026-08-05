@@ -71,7 +71,7 @@ fun AdvancedScreen() {
                     }
                 }
                 
-                SettingsSwitch(label = "KSM", description = "Merge identical pages to save RAM.", path = "/sys/kernel/mm/ksm/run")
+                SettingsSwitch(label = stringResource(R.string.adv_ksm), description = "Merge identical pages to save RAM.", path = "/sys/kernel/mm/ksm/run")
                 if (GenericManager.exists("/sys/kernel/mm/ksm/deferred_timer")) {
                     SettingsSwitch(label = "Deferred Timer", description = "Prevents KSM from waking the CPU.", path = "/sys/kernel/mm/ksm/deferred_timer")
                 }
@@ -85,7 +85,7 @@ fun AdvancedScreen() {
             AdvancedSection(title = stringResource(R.string.adv_uksm)) {
                 Text(text = stringResource(R.string.adv_uksm_desc), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontStyle = FontStyle.Italic)
                 Spacer(Modifier.height(8.dp))
-                SettingsSwitch(label = "UKSM", description = "Faster memory merging algorithm.", path = "/sys/kernel/mm/uksm/run")
+                SettingsSwitch(label = stringResource(R.string.adv_uksm), description = "Faster memory merging algorithm.", path = "/sys/kernel/mm/uksm/run")
                 SettingsSeekBar(title = "Sleep Interval", path = "/sys/kernel/mm/uksm/sleep_millisecs", min = 0f, max = 3000f, unit = " ms", step = 100f)
                 SettingsSeekBar(title = "Max CPU %", path = "/sys/kernel/mm/uksm/max_cpu_percentage", min = 10f, max = 99f, unit = "%")
             }
@@ -96,7 +96,7 @@ fun AdvancedScreen() {
             AdvancedSection(title = stringResource(R.string.adv_adaptive_lmk)) {
                 Text(text = stringResource(R.string.adv_adaptive_lmk_desc), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontStyle = FontStyle.Italic)
                 Spacer(Modifier.height(8.dp))
-                SettingsSwitch(label = "Adaptive LMK", description = "Dynamically adjusts kill thresholds.", path = "/sys/module/lowmemorykiller/parameters/enable_adaptive_lmk")
+                SettingsSwitch(label = stringResource(R.string.adv_adaptive_lmk), description = "Dynamically adjusts kill thresholds.", path = "/sys/module/lowmemorykiller/parameters/enable_adaptive_lmk")
             }
         }
 

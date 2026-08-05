@@ -33,17 +33,36 @@ import kotlinx.coroutines.withContext
 @Composable
 fun GpuScreen(isScrolling: () -> Boolean = { false }) {
     val scope = rememberCoroutineScope()
-    val gpuFrequencyFlow = remember { GpuManager.getGpuFrequencyFlow() }
     
     val gpuFreqState = remember { mutableLongStateOf(0L) }
     val history = remember { mutableStateListOf<Long>() }
+    var availableFreqs by remember { mutableStateOf<List<Long>>(emptyList()) }
+    var availableGovs by remember { mutableStateOf<List<String>>(emptyList()) }
+    var minFreq by remember { mutableLongStateOf(0L) }
+    var maxFreq by remember { mutableLongStateOf(0L) }
+    var currentGov by remember { mutableStateOf("") }
+    var tunables by remember { mutableStateOf(emptyList<com.af.synapse.data.GovernorTunable>()) }
 
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
+            val freqs = GpuManager.getAvailableFrequencies()
+            val govs = GpuManager.getAvailableGovernors()
+            val min = GpuManager.getMinFrequency()
             val max = GpuManager.getMaxFrequency()
-            withContext(Dispatchers.Main) { gpuFreqState.longValue = max }
+            val gov = GpuManager.getCurrentGovernor()
+            val t = GpuManager.getGovernorTunables()
+
+            withContext(Dispatchers.Main) {
+                availableFreqs = freqs
+                availableGovs = govs
+                minFreq = min
+                maxFreq = max
+                currentGov = gov
+                tunables = t
+                gpuFreqState.longValue = max
+            }
             
-            gpuFrequencyFlow.collect { freq ->
+            GpuManager.getGpuFrequencyFlow().collect { freq ->
                 if (isScrolling()) return@collect
                 withContext(Dispatchers.Main) {
                     gpuFreqState.longValue = freq
@@ -56,31 +75,8 @@ fun GpuScreen(isScrolling: () -> Boolean = { false }) {
         }
     }
     
-    val availableFreqs = remember { GpuManager.getAvailableFrequencies() }
-    val availableGovs = remember { GpuManager.getAvailableGovernors() }
-    
     val minBound = remember(availableFreqs) { availableFreqs.firstOrNull() ?: 0L }
     val maxBound = remember(availableFreqs) { availableFreqs.lastOrNull() ?: 1000L }
-
-    var minFreq by remember { mutableLongStateOf(0L) }
-    var maxFreq by remember { mutableLongStateOf(0L) }
-    var currentGov by remember { mutableStateOf("") }
-    var tunables by remember { mutableStateOf(emptyList<com.af.synapse.data.GovernorTunable>()) }
-
-    LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) {
-            val min = GpuManager.getMinFrequency()
-            val max = GpuManager.getMaxFrequency()
-            val gov = GpuManager.getCurrentGovernor()
-            val t = GpuManager.getGovernorTunables()
-            withContext(Dispatchers.Main) {
-                minFreq = min
-                maxFreq = max
-                currentGov = gov
-                tunables = t
-            }
-        }
-    }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
@@ -102,43 +98,62 @@ fun GpuScreen(isScrolling: () -> Boolean = { false }) {
             max = maxBound
         )
 
-        CommonFrequencySeekBar(
-            title = stringResource(R.string.gpu_min_freq),
-            description = stringResource(R.string.gpu_min_freq_desc),
-            currentValue = minFreq,
-            values = availableFreqs,
-            onValueChange = { minFreq = it; GpuManager.setFrequency(it, false) }
-        )
+        if (availableFreqs.isNotEmpty()) {
+            CommonFrequencySeekBar(
+                title = stringResource(R.string.gpu_min_freq),
+                description = stringResource(R.string.gpu_min_freq_desc),
+                currentValue = minFreq,
+                values = availableFreqs,
+                onValueChange = { minFreq = it; GpuManager.setFrequency(it, false) }
+            )
 
-        CommonFrequencySeekBar(
-            title = stringResource(R.string.gpu_max_freq),
-            description = stringResource(R.string.gpu_max_freq_desc),
-            currentValue = maxFreq,
-            values = availableFreqs,
-            onValueChange = { maxFreq = it; GpuManager.setFrequency(it, true) }
-        )
+            CommonFrequencySeekBar(
+                title = stringResource(R.string.gpu_max_freq),
+                description = stringResource(R.string.gpu_max_freq_desc),
+                currentValue = maxFreq,
+                values = availableFreqs,
+                onValueChange = { maxFreq = it; GpuManager.setFrequency(it, true) }
+            )
+        }
 
-        SettingsDropdown(
-            label = stringResource(R.string.gpu_governor),
-            description = stringResource(R.string.gpu_governor_desc),
-            currentValue = currentGov,
-            options = availableGovs,
-            onSelect = { gov ->
-                scope.launch {
-                    withContext(Dispatchers.IO) { GpuManager.setGovernor(gov) }
-                    currentGov = gov
-                    delay(250)
-                    val newTunables = withContext(Dispatchers.IO) { GpuManager.getGovernorTunables() }
-                    tunables = newTunables
+        if (availableGovs.isNotEmpty()) {
+            SettingsDropdown(
+                label = stringResource(R.string.gpu_governor),
+                description = stringResource(R.string.gpu_governor_desc),
+                currentValue = currentGov,
+                options = availableGovs,
+                onSelect = { gov ->
+                    scope.launch {
+                        withContext(Dispatchers.IO) { GpuManager.setGovernor(gov) }
+                        currentGov = gov
+                        delay(250)
+                        val newTunables = withContext(Dispatchers.IO) { GpuManager.getGovernorTunables() }
+                        tunables = newTunables
+                    }
                 }
-            }
-        )
+            )
+        }
 
         if (tunables.isNotEmpty()) {
             Text(stringResource(R.string.cpu_tunables), fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
             tunables.forEach { tunable ->
                 SettingsTunableItem(tunable) { newVal ->
-                    scope.launch(Dispatchers.IO) { CpuManager.setTunable(tunable.path, newVal) }
+                    scope.launch {
+                        withContext(Dispatchers.IO) { CpuManager.setTunable(tunable.path, newVal) }
+                        delay(200)
+                        withContext(Dispatchers.IO) {
+                            val min = GpuManager.getMinFrequency()
+                            val max = GpuManager.getMaxFrequency()
+                            val gov = GpuManager.getCurrentGovernor()
+                            val t = GpuManager.getGovernorTunables()
+                            withContext(Dispatchers.Main) {
+                                minFreq = min
+                                maxFreq = max
+                                currentGov = gov
+                                tunables = t
+                            }
+                        }
+                    }
                 }
             }
         }

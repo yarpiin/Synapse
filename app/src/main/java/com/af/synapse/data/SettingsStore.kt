@@ -21,10 +21,10 @@ object SettingsStore {
     }
 
     fun trackSetting(path: String, value: String) {
-        prefs.edit().putString(path, value).apply()
+        prefs.edit().putString(path, value).commit()
         val tracked = getTrackedPaths().toMutableSet()
         if (tracked.add(path)) {
-            prefs.edit().putStringSet(TRACKED_PATHS_KEY, tracked).apply()
+            prefs.edit().putStringSet(TRACKED_PATHS_KEY, tracked).commit()
         }
     }
 
@@ -33,22 +33,22 @@ object SettingsStore {
     fun getValue(path: String): String = prefs.getString(path, "") ?: ""
 
     fun setApplyOnBoot(enabled: Boolean) {
-        bootPrefs.edit().putBoolean(APPLY_ON_BOOT_KEY, enabled).apply()
+        bootPrefs.edit().putBoolean(APPLY_ON_BOOT_KEY, enabled).commit()
     }
 
     fun isApplyOnBoot(): Boolean = bootPrefs.getBoolean(APPLY_ON_BOOT_KEY, false)
 
     fun setBootDelay(seconds: Int) {
-        bootPrefs.edit().putInt(BOOT_DELAY_KEY, seconds).apply()
+        bootPrefs.edit().putInt(BOOT_DELAY_KEY, seconds).commit()
     }
 
     fun getBootDelay(): Int = bootPrefs.getInt(BOOT_DELAY_KEY, 0)
 
     fun setThemeMode(mode: Int) {
-        bootPrefs.edit().putInt(THEME_PREF_KEY, mode).apply()
+        bootPrefs.edit().putInt(THEME_PREF_KEY, mode).commit()
     }
 
-    fun getThemeMode(): Int = bootPrefs.getInt(THEME_PREF_KEY, 0) // 0: Auto, 1: Light, 2: Dark
+    fun getThemeMode(): Int = bootPrefs.getInt(THEME_PREF_KEY, 0)
 
     fun applyAllSettings() {
         val tracked = getTrackedPaths()
@@ -64,24 +64,35 @@ object SettingsStore {
                 when (path) {
                     "/sys/block/zram0/disksize" -> zramSize = value
                     "/sys/block/zram0/comp_algorithm" -> zramAlgo = value
-                    else -> normalCommands.add("echo $value > $path")
+                    else -> {
+                        normalCommands.add("chmod 644 $path 2>/dev/null")
+                        normalCommands.add("echo $value > $path")
+                    }
                 }
             }
         }
 
-        // Apply normal settings first
         if (normalCommands.isNotEmpty()) {
             Shell.cmd(*normalCommands.toTypedArray()).exec()
         }
 
-        // Apply Z-RAM if tracked
+        // Apply Z-RAM with extreme caution during boot/init
         if (zramSize != null || zramAlgo != null) {
-            val zCmd = mutableListOf("swapoff /dev/block/zram0", "echo 1 > /sys/block/zram0/reset")
-            zramAlgo?.let { zCmd.add("echo $it > /sys/block/zram0/comp_algorithm") }
-            zramSize?.let { zCmd.add("echo $it > /sys/block/zram0/disksize") }
-            zCmd.add("mkswap /dev/block/zram0")
-            zCmd.add("swapon /dev/block/zram0")
-            Shell.cmd(*zCmd.toTypedArray()).exec()
+            val finalSize = zramSize ?: Shell.cmd("cat /sys/block/zram0/disksize").exec().out.firstOrNull() ?: "0"
+            val finalAlgo = zramAlgo ?: Shell.cmd("cat /sys/block/zram0/comp_algorithm").exec().out.firstOrNull()?.let { 
+                it.substringAfter("[").substringBefore("]").trim()
+            } ?: "lzo"
+            
+            if (finalSize != "0") {
+                Shell.cmd(
+                    "swapoff /dev/block/zram0 2>/dev/null",
+                    "echo 1 > /sys/block/zram0/reset",
+                    "echo $finalAlgo > /sys/block/zram0/comp_algorithm",
+                    "echo $finalSize > /sys/block/zram0/disksize",
+                    "mkswap /dev/block/zram0",
+                    "swapon /dev/block/zram0"
+                ).exec()
+            }
         }
     }
 }

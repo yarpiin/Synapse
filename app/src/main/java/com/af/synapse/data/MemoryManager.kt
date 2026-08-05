@@ -24,15 +24,8 @@ object MemoryManager {
 
     fun getRamStatsFlow() = flow {
         while (true) {
-            val stats = try {
-                val lines = File("/proc/meminfo").readLines()
-                parseMemInfo(lines)
-            } catch (e: Exception) {
-                val memInfo = Shell.cmd("cat /proc/meminfo").exec().out
-                parseMemInfo(memInfo)
-            }
-            emit(stats)
-            delay(5000) // 5 seconds is better for "live" feel without much overhead
+            emit(getRamStats())
+            delay(5000)
         }
     }.flowOn(Dispatchers.IO)
 
@@ -62,7 +55,6 @@ object MemoryManager {
             }
         }
 
-        // Adjust total to show physical RAM (round up to nearest GB)
         val actualTotalMb = total / 1024
         val physicalGb = kotlin.math.ceil(actualTotalMb / 1024.0).toLong()
         val totalMb = physicalGb * 1024
@@ -81,15 +73,24 @@ object MemoryManager {
     }
 
     fun getZRamStats(): ZRamStats {
-        val diskSizeStr = Shell.cmd("cat /sys/block/zram0/disksize").exec().out.firstOrNull() ?: "0"
-        // Use decimal to match diagnostic apps (1 GB = 1,000,000,000 bytes)
-        val totalMb = (diskSizeStr.toLongOrNull() ?: 0L) / 1000 / 1000
+        val path = "/sys/block/zram0"
+        val diskSizeStr = try {
+            File("$path/disksize").readText().trim()
+        } catch (e: Exception) {
+            Shell.cmd("cat $path/disksize").exec().out.firstOrNull() ?: "0"
+        }
         
-        val mmStat = Shell.cmd("cat /sys/block/zram0/mm_stat").exec().out.firstOrNull()
+        val totalMb = (diskSizeStr.toLongOrNull() ?: 0L) / 1024 / 1024
+        
+        val mmStat = try {
+            File("$path/mm_stat").readText().trim()
+        } catch (e: Exception) {
+            Shell.cmd("cat $path/mm_stat").exec().out.firstOrNull()
+        }
+        
         val usedMb = if (mmStat != null) {
             val parts = mmStat.trim().split(Regex("\\s+"))
-            // mm_stat 3rd field is orig_data_size in bytes
-            if (parts.size >= 3) (parts[2].toLongOrNull() ?: 0L) / 1000 / 1000 else 0L
+            if (parts.size >= 3) (parts[2].toLongOrNull() ?: 0L) / 1024 / 1024 else 0L
         } else {
             0L
         }
@@ -100,7 +101,6 @@ object MemoryManager {
 
     fun getZRamCompAlgorithms(): List<String> {
         val out = Shell.cmd("cat /sys/block/zram0/comp_algorithm").exec().out.firstOrNull() ?: ""
-        // Format: lzo [lz4] deflate
         return out.replace("[", "").replace("]", "").split(" ").filter { it.isNotBlank() }
     }
 
@@ -110,25 +110,26 @@ object MemoryManager {
     }
 
     fun setZRamSize(mb: Int) {
-        val bytes = mb.toLong() * 1000 * 1000 // Use decimal for Z-RAM
+        val bytes = mb.toLong() * 1024 * 1024
         val bytesStr = bytes.toString()
+        SettingsStore.trackSetting("/sys/block/zram0/disksize", bytesStr)
+
         Shell.cmd(
-            "swapoff /dev/block/zram0",
+            "swapoff /dev/block/zram0 2>/dev/null",
             "echo 1 > /sys/block/zram0/reset",
             "echo $bytesStr > /sys/block/zram0/disksize",
             "mkswap /dev/block/zram0",
             "swapon /dev/block/zram0"
         ).exec()
-        SettingsStore.trackSetting("/sys/block/zram0/disksize", bytesStr)
     }
 
     fun setZRamAlgorithm(algo: String) {
+        SettingsStore.trackSetting("/sys/block/zram0/comp_algorithm", algo)
         Shell.cmd(
-            "swapoff /dev/block/zram0",
+            "swapoff /dev/block/zram0 2>/dev/null",
             "echo 1 > /sys/block/zram0/reset",
             "echo $algo > /sys/block/zram0/comp_algorithm",
             "swapon /dev/block/zram0"
         ).exec()
-        SettingsStore.trackSetting("/sys/block/zram0/comp_algorithm", algo)
     }
 }

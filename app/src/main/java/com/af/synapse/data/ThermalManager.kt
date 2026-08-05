@@ -20,17 +20,15 @@ object ThermalManager {
     fun getTemperaturesFlow() = flow {
         while (true) {
             val sensors = mutableListOf<TemperatureSensor>()
-            val allTemps = mutableMapOf<Int, Float>()
             
             if (cachedZones == null) {
                 val zones = mutableListOf<Pair<Int, String>>()
+                // Updated mappings based on user feedback
                 val mappings = mapOf(
-                    20 to "SoC (Avg)",
+                    12 to "SoC",
+                    0 to "CPU",
                     3 to "GPU",
-                    15 to "Battery",
-                    0 to "Big Cores",
-                    1 to "Mid Cores",
-                    2 to "Little Cores"
+                    15 to "Battery"
                 )
                 
                 mappings.forEach { (idx, label) ->
@@ -39,13 +37,6 @@ object ThermalManager {
                     }
                 }
                 
-                if (zones.isEmpty()) {
-                    for (i in 0..15) {
-                        if (GenericManager.exists("/sys/class/thermal/thermal_zone$i/temp")) {
-                            zones.add(i to "Zone $i")
-                        }
-                    }
-                }
                 cachedZones = zones
             }
 
@@ -53,17 +44,16 @@ object ThermalManager {
                 val temp = readZoneTemp(idx)
                 if (temp != null && temp > 0) {
                     sensors.add(TemperatureSensor(label, temp, "zone_$idx"))
-                    allTemps[idx] = temp
                 }
             }
 
-            val peakTemp = allTemps.filter { it.key != 15 }.values.maxOrNull() ?: 0f
-            if (peakTemp > 0) {
-                sensors.add(0, TemperatureSensor("SoC Peak", peakTemp, "soc_peak"))
+            // Battery fallback from power_supply
+            if (sensors.none { it.label == "Battery" }) {
+                getBatteryTemperature()?.let { sensors.add(it) }
             }
 
             emit(sensors)
-            delay(60000)
+            delay(3000) // Faster refresh: 3 seconds
         }
     }.flowOn(Dispatchers.IO)
 
@@ -71,6 +61,22 @@ object ThermalManager {
         val path = "/sys/class/thermal/thermal_zone$idx/temp"
         val out = Shell.cmd("cat $path 2>/dev/null").exec().out.firstOrNull()
         return parseTemp(out ?: "")
+    }
+
+    private fun getBatteryTemperature(): TemperatureSensor? {
+        val paths = listOf(
+            "/sys/class/power_supply/battery/temp",
+            "/sys/class/power_supply/google_battery/temp"
+        )
+        for (path in paths) {
+            val out = Shell.cmd("cat $path 2>/dev/null").exec().out.firstOrNull()
+            if (out != null) {
+                parseTemp(out)?.let {
+                    return TemperatureSensor("Battery", it, "battery_ps")
+                }
+            }
+        }
+        return null
     }
 
     private fun parseTemp(raw: String): Float? {

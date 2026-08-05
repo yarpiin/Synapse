@@ -4,13 +4,15 @@
 
     <!-- Nawigacja -->
     <string name="nav_summary">Podsumowanie</string>
+    <string name="nav_battery">Bateria</string>
     <string name="nav_cpu_silver">Rdzenie Silver</string>
     <string name="nav_cpu_gold">Rdzenie Gold</string>
     <string name="nav_cpu_perf">Rdzenie Performance</string>
     <string name="nav_gpu">Sterowanie GPU</string>
-    <string name="nav_thermal">Termika</string>
+    <string name="nav_thermal">Temperatura</string>
     <string name="nav_memory">Pamięć RAM</string>
     <string name="nav_io">Harmonogram I/O</string>
+    <string name="nav_voltage">Napięcia CPU</string>
     <string name="nav_advanced">Zaawansowane</string>
     <string name="nav_misc">Różne</string>
     <string name="nav_profiles">Profile</string>
@@ -30,9 +32,21 @@
     <string name="summary_clusters">Liczba klastrów</string>
     <string name="summary_gpu">Grafika (GPU)</string>
     <string name="summary_ram">Pamięć (RAM)</string>
-    <string name="summary_thermal">Termika (SoC)</string>
+    <string name="summary_thermal">Temperatura (SoC)</string>
     <string name="summary_peak">Szczytowa</string>
     <string name="summary_avg">Średnia</string>
+    <string name="summary_physical_ram">Fizyczny RAM</string>
+    <string name="summary_usage">Użycie</string>
+    <string name="summary_free_mem">Wolna pamięć</string>
+    <string name="summary_power_batt">Zasilanie / Bateria</string>
+    <string name="summary_soc_temp">Temperatura SoC</string>
+    <string name="summary_batt_temp">Temperatura baterii</string>
+    <string name="summary_discharge">Szybkość rozładowywania</string>
+    <string name="summary_charge">Szybkość ładowania</string>
+    <string name="summary_charge_type">Typ ładowania</string>
+    <string name="summary_charge_info">Informacje o ładowaniu</string>
+    <string name="summary_renderer">Renderer</string>
+    <string name="summary_developer">Deweloper</string>
 
     <!-- Ekran CPU -->
     <string name="cpu_min_freq">Częstotliwość minimalna</string>
@@ -52,7 +66,7 @@
     <string name="gpu_governor">Zarządca GPU</string>
     <string name="gpu_governor_desc">Logika odpowiedzialna za zarządzanie energią i stopniami częstotliwości układu graficznego.</string>
 
-    <!-- Ekran Termiki -->
+    <!-- Ekran Temperatura -->
     <string name="thermal_desc">Zapobiega przegrzaniu poprzez dławienie wydajności lub wyłączanie komponentów po osiągnięciu limitów temperatury.</string>
     <string name="thermal_throttle_temp">Temp. dławienia taktowania</string>
     <string name="thermal_throttle_temp_desc">Temperatura, przy której jądro zaczyna redukować częstotliwości CPU/GPU w celu schłodzenia.</string>
@@ -88,6 +102,39 @@
     <string name="io_crc">Programowa kontrola CRC</string>
     <string name="io_crc_desc">Wyłączenie programowej weryfikacji sum kontrolnych może poprawić wydajność zapisu poprzez pominięcie narzutu weryfikacji danych.</string>
 
+    <!-- Napięcia -->
+    <string name="volt_desc">Obniżanie napięć zmniejsza wydzielanie ciepła i zużycie energii. Zwiększanie napięć przy przetaktowaniu poprawia stabilność. Zbyt niskie wartości mogą powodować zawieszanie systemu.</string>
+    <string name="volt_global">Globalne napięcie CPU</string>
+    <string name="volt_freq">Napięcia dla częstotliwości</string>
+    <string name="volt_core">Napięcia rdzenia (Core)</string>
+    <string name="volt_iva">Napięcia IVA</string>
+    <string name="volt_reg">Napięcia regulatorów</string>
+
+    <!-- Ekran Baterii -->
+    <string name="batt_level">Poziom baterii</string>
+    <string name="batt_temp">Temp.</string>
+    <string name="batt_volt">Napięcie</string>
+    <string name="batt_ctrl">Sterowanie ładowaniem</string>
+    <string name="batt_fast_charge">Szybkie ładowanie USB</string>
+    <string name="batt_fast_charge_desc">Pozwala na pobieranie większego prądu z portów USB w celu przyspieszenia ładowania.</string>
+    <string name="batt_enabled">Ładowanie włączone</string>
+    <string name="batt_enabled_desc">Główny przełącznik umożliwiający włączenie lub wyłączenie ładowania baterii.</string>
+    <string name="batt_health_info">Informacje o kondycji</string>
+    <string name="batt_live_charging">Informacje o zasilaniu</string>
+    <string name="batt_speed">Moc</string>
+    <string name="batt_current">Natężenie</string>
+    <string name="batt_time_left">Pozostały czas</string>
+    <string name="batt_health_status">Status kondycji</string>
+    <string name="batt_cycles">Liczba cykli</string>
+    <string name="batt_cap_design">Pojemność fabryczna</string>
+    <string name="batt_cap_actual">Pojemność obecna</string>
+    <string name="batt_overall_health">Ogólna kondycja</string>
+    <string name="batt_pixel_limits">Limity ładowania Pixel</string>
+    <string name="batt_stop_level">Poziom zatrzymania ładowania</string>
+    <string name="batt_stop_level_desc">Zatrzymaj ładowanie, gdy bateria osiągnie ten procent, aby przedłużyć jej żywotność.</string>
+    <string name="batt_start_level">Poziom wznowienia ładowania</string>
+    <string name="batt_start_level_desc">Wznów ładowanie dopiero, gdy poziom baterii spadnie poniżej tej wartości.</string>
+
     <!-- Profile -->
     <string name="prof_desc">Zarządzaj profilami konfiguracji, aby szybko przełączać się między trybami wydajności, równowagi i oszczędzania energii.</string>
     <string name="prof_create">Utwórz nowy profil</string>
@@ -96,7 +143,7 @@
     <string name="prof_name_hint">Nazwa profilu</string>
     <string name="prof_apply">Zastosuj</string>
     <string name="prof_delete">Usuń</string>
-    <string name="zram_applying">Konfiguracja Z-RAM, proszę czekać…</string>
+    <string name="zram_applying">Stosowanie ustawień Z-RAM, proszę czekać…\n(Może to potrwać kilka sekund)</string>
 
     <!-- Ustawienia -->
     <string name="settings_desc">Konfiguracja zachowania i globalnych ustawień aplikacji.</string>
@@ -113,6 +160,7 @@
     <string name="about_dev">Programista: yarpiin</string>
     <string name="about_support">Jeśli podoba Ci się moja praca:</string>
     <string name="about_donate">Wesprzyj przez PayPal</string>
+
     <!-- Zaawansowane -->
     <string name="adv_desc">Różne zaawansowane ustawienia jądra. Nie zmieniaj ich, jeśli nie wiesz, co robisz.</string>
     <string name="adv_krait">Stany uśpienia Krait (C-States)</string>

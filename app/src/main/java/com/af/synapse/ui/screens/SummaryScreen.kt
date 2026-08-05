@@ -21,57 +21,81 @@ import com.af.synapse.R
 import com.af.synapse.data.CpuManager
 import com.af.synapse.data.GpuManager
 import com.af.synapse.data.GenericManager
+import com.af.synapse.data.MonitorManager
+import com.af.synapse.data.BatteryManager
 import com.af.synapse.ui.theme.PixelBlue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.util.Locale
 
 @Composable
 fun SummaryScreen() {
     val scrollState = rememberScrollState()
+    val ramStats by MonitorManager.ramStats.collectAsState()
+    val temperatures by MonitorManager.temperatures.collectAsState()
     
     val deviceModel = android.os.Build.MODEL
     val manufacturer = android.os.Build.MANUFACTURER.uppercase()
     
-    // SoC Name detection (Tensor G4, etc.)
-    val socName = remember {
-        var detected: String? = null
-        if (android.os.Build.VERSION.SDK_INT >= 31) {
-            try {
-                val field = android.os.Build::class.java.getField("SOC_MODEL")
-                detected = field.get(null) as? String
-            } catch (e: Exception) { }
-        }
-        
-        if (detected == null || detected.isEmpty()) {
-            detected = GenericManager.readFile("/proc/cpuinfo")
-                .lines()
-                .find { it.startsWith("Hardware") }
-                ?.substringAfter(":")?.trim()
-        }
+    var socName by remember { mutableStateOf("Octa-Core Processor") }
+    var buildType by remember { mutableStateOf("Stock/Custom") }
+    var compilation by remember { mutableStateOf(android.os.Build.DISPLAY) }
+    var androidVer by remember { mutableStateOf(android.os.Build.VERSION.RELEASE) }
+    var kernelVer by remember { mutableStateOf("Unknown") }
+    var batteryStats by remember { mutableStateOf<BatteryManager.BatteryStats?>(null) }
 
-        when {
-            detected?.contains("gs301", true) == true -> "Google Tensor G3"
-            detected?.contains("gs201", true) == true -> "Google Tensor G2"
-            detected?.contains("gs101", true) == true -> "Google Tensor"
-            detected?.contains("gs401", true) == true || detected?.contains("tensor g4", true) == true -> "Google Tensor G4"
-            else -> detected ?: "Octa-Core Processor"
+    // Fetch static data off-thread
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            // SoC Detection
+            var detected: String? = null
+            if (android.os.Build.VERSION.SDK_INT >= 31) {
+                try {
+                    val field = android.os.Build::class.java.getField("SOC_MODEL")
+                    detected = field.get(null) as? String
+                } catch (e: Exception) { }
+            }
+            if (detected.isNullOrEmpty()) {
+                detected = GenericManager.readFile("/proc/cpuinfo")
+                    .lines()
+                    .find { it.startsWith("Hardware") }
+                    ?.substringAfter(":")?.trim()
+            }
+            val finalSoc = when {
+                detected?.contains("gs301", true) == true -> "Google Tensor G3"
+                detected?.contains("gs201", true) == true -> "Google Tensor G2"
+                detected?.contains("gs101", true) == true -> "Google Tensor"
+                detected?.contains("gs401", true) == true || detected?.contains("tensor g4", true) == true -> "Google Tensor G4"
+                else -> detected ?: "Octa-Core Processor"
+            }
+
+            // ROM Info
+            val props = GenericManager.readFile("/system/build.prop")
+            val isLineage = props.contains("lineage", true) || GenericManager.exists("/system/addon.d/50-lineage.sh")
+            val isPixel = props.contains("google", true) && props.contains("pixel", true)
+            val finalBuildType = when {
+                isLineage -> "LineageOS"
+                isPixel -> "Google"
+                else -> "Stock/Custom"
+            }
+
+            val kVer = System.getProperty("os.version")?.split("-")?.firstOrNull() ?: "Unknown"
+
+            withContext(Dispatchers.Main) {
+                socName = finalSoc
+                buildType = finalBuildType
+                kernelVer = kVer
+            }
         }
     }
 
-    // ROM Info
-    val buildType = remember {
-        val props = GenericManager.readFile("/system/build.prop")
-        val isLineage = props.contains("lineage", true) || GenericManager.exists("/system/addon.d/50-lineage.sh")
-        val isPixel = props.contains("google", true) && props.contains("pixel", true)
-        
-        when {
-            isLineage -> "LineageOS"
-            isPixel -> "Google"
-            else -> "Stock/Custom"
+    // Update battery stats when temperatures change (which is the refresh signal)
+    LaunchedEffect(temperatures) {
+        withContext(Dispatchers.IO) {
+            val stats = BatteryManager.getBatteryStats()
+            withContext(Dispatchers.Main) { batteryStats = stats }
         }
     }
-        
-    val compilation = android.os.Build.DISPLAY
-    val androidVer = android.os.Build.VERSION.RELEASE
-    val kernelVer = System.getProperty("os.version")?.split("-")?.firstOrNull() ?: "Unknown"
 
     Column(
         modifier = Modifier
@@ -119,7 +143,6 @@ fun SummaryScreen() {
             
             val coreCountText = when(totalCores) {
                 4 -> "Quad-core Processor"
-                6 -> "Hexa-core Processor"
                 8 -> "Octa-core Processor"
                 10 -> "Deca-core Processor"
                 else -> "$totalCores-core Processor"
@@ -140,6 +163,12 @@ fun SummaryScreen() {
                 fontWeight = FontWeight.Bold
             )
             
+            // Fixed: Real SoC temperature from zone_12
+            val socTemp = temperatures.find { it.key == "zone_12" }?.value ?: 0f
+            if (socTemp > 0) {
+                SummaryDashboardRow(stringResource(R.string.summary_soc_temp), String.format(Locale.US, "%.1f°C", socTemp))
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
             
             clusters.forEachIndexed { index, i ->
@@ -157,7 +186,6 @@ fun SummaryScreen() {
         // 3. GPU Section
         SummaryDashboardSection(title = stringResource(R.string.summary_gpu)) {
             val gpuPath = GpuManager.getGpuPath() ?: ""
-            
             val gpuModelName = when {
                 socName.contains("G4") || gpuPath.contains("1f000000.mali") -> "ARM Mali-G715 (Immortalis)"
                 socName.contains("G3") || gpuPath.contains("1c500000.mali") -> "ARM Mali-G715"
@@ -179,13 +207,37 @@ fun SummaryScreen() {
             )
             
             Spacer(modifier = Modifier.height(4.dp))
-            
-            val renderer = if (gpuPath.contains("mali")) "Mali Graphics" else "Adreno Graphics"
-            SummaryDashboardRow("Renderer", renderer)
+            SummaryDashboardRow(stringResource(R.string.summary_renderer), if (gpuPath.contains("mali")) "Mali Graphics" else "Adreno Graphics")
         }
 
-        // 4. ROM / System Details Section
+        // 4. Memory Section
+        SummaryDashboardSection(title = stringResource(R.string.nav_memory).uppercase()) {
+            ramStats?.let {
+                SummaryDashboardRow(stringResource(R.string.summary_physical_ram), "${it.totalMb} MB")
+                SummaryDashboardRow(stringResource(R.string.summary_usage), "${it.usedMb} MB / ${it.totalMb} MB (${it.usedPercent}%)")
+                SummaryDashboardRow(stringResource(R.string.summary_free_mem), "${it.freeMb} MB")
+            } ?: Text("Loading RAM stats...", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+
+        // 5. Power / Battery Section
+        SummaryDashboardSection(title = stringResource(R.string.summary_power_batt).uppercase()) {
+            val battTemp = temperatures.find { it.key == "battery" || it.key == "battery_ps" }?.value ?: 0f
+            if (battTemp > 0) SummaryDashboardRow(stringResource(R.string.summary_batt_temp), String.format(Locale.US, "%.1f°C", battTemp))
+            
+            batteryStats?.let { stats ->
+                val powerValue = if (stats.isCharging) String.format(Locale.US, "%.1f W", stats.powerW) else "0.0 W"
+                SummaryDashboardRow(stringResource(R.string.summary_charge), powerValue)
+
+                val currentVal = if (stats.currentMa > 0) "+${stats.currentMa}" else "${stats.currentMa}"
+                SummaryDashboardRow(stringResource(R.string.batt_current), "$currentVal mA")
+                
+                SummaryDashboardRow("Status", stats.status)
+            }
+        }
+
+        // 6. ROM / System Details Section
         SummaryDashboardSection(title = stringResource(R.string.header_rom)) {
+            SummaryDashboardRow("Developer", buildType)
             SummaryDashboardRow(stringResource(R.string.summary_build_type), buildType)
             SummaryDashboardRow(stringResource(R.string.summary_compilation), compilation)
             SummaryDashboardRow(stringResource(R.string.summary_android_ver), androidVer)
