@@ -6,10 +6,10 @@ A completely modernized, standalone Kernel Manager for Android. This project is 
 
 ## Features
 
-* **Embedded Hardware Controls:** No UCI ramdisk or external scripts needed; all configuration interfaces are hardcoded natively into the application backend.
+* **Embedded Hardware Controls:** No UCI script or external scripts needed; all configuration interfaces are hardcoded natively into the application backend.
 * **Modern UI:** Redesigned from the ground up to match modern Android aesthetics and navigation flows.
 * **Total Kernel Control:** Easily adjust CPU/GPU frequencies, governors, voltages, low-memory killer (LMK) limits, thermal steps, and custom I/O schedulers.
-* **Universal Compatibility:** Works across a broader range of kernels and ROMs since it does not require specialized ramdisk backends.
+* **Universal Compatibility:** Works across a broader range of kernels and ROMs since it does not require specialized script backends.
 * **Standard APK Deployment:** Installs instantly as a normal application package.
 
 ## Requirements
