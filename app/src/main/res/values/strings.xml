@@ -1,0 +1,163 @@
+<resources>
+    <string name="app_name">Synapse</string>
+    <string name="unknown">Unknown</string>
+
+    <!-- Navigation -->
+    <string name="nav_summary">Summary</string>
+    <string name="nav_cpu_silver">Silver Cluster</string>
+    <string name="nav_cpu_gold">Gold Cluster</string>
+    <string name="nav_cpu_perf">Performance Cluster</string>
+    <string name="nav_gpu">GPU Control</string>
+    <string name="nav_thermal">Thermal</string>
+    <string name="nav_memory">Memory</string>
+    <string name="nav_io">I/O Scheduler</string>
+    <string name="nav_advanced">Advanced</string>
+    <string name="nav_misc">Miscellaneous</string>
+    <string name="nav_profiles">Profiles</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_about">About</string>
+
+    <!-- Summary Screen -->
+    <string name="summary_desc">Overview of device status and key hardware parameters.</string>
+    <string name="summary_system">System</string>
+    <string name="header_rom">ROM / System</string>
+    <string name="summary_model">Model</string>
+    <string name="summary_android_ver">Android Version</string>
+    <string name="summary_kernel_ver">Kernel Version</string>
+    <string name="summary_build_type">Build Type</string>
+    <string name="summary_compilation">Compilation</string>
+    <string name="summary_cpu">Processor (CPU)</string>
+    <string name="summary_clusters">Cluster Count</string>
+    <string name="summary_gpu">Graphics (GPU)</string>
+    <string name="summary_ram">Memory (RAM)</string>
+    <string name="summary_thermal">Thermal (SoC)</string>
+    <string name="summary_peak">Peak</string>
+    <string name="summary_avg">Average</string>
+
+    <!-- CPU Screen -->
+    <string name="cpu_min_freq">Min Frequency</string>
+    <string name="cpu_min_freq_desc">The lowest frequency the CPU can scale down to during idle periods to save battery.</string>
+    <string name="cpu_max_freq">Max Frequency</string>
+    <string name="cpu_max_freq_desc">The highest frequency the CPU can scale up to under heavy load for maximum performance.</string>
+    <string name="cpu_governor">CPU Governor</string>
+    <string name="cpu_governor_desc">Algorithm that controls how the CPU frequency scales up or down based on system load.</string>
+    <string name="cpu_tunables">Governor Tunables</string>
+
+    <!-- GPU Screen -->
+    <string name="gpu_desc">Management of frequency and scaling for the Graphics Processing Unit.</string>
+    <string name="gpu_min_freq">Min GPU Frequency</string>
+    <string name="gpu_min_freq_desc">The lowest clock speed the GPU will use in 2D or low-load scenarios.</string>
+    <string name="gpu_max_freq">Max GPU Frequency</string>
+    <string name="gpu_max_freq_desc">The maximum clock speed for high-performance 3D gaming and UI rendering.</string>
+    <string name="gpu_governor">GPU Governor</string>
+    <string name="gpu_governor_desc">Logic responsible for GPU power management and frequency stepping.</string>
+
+    <!-- Thermal Screen -->
+    <string name="thermal_desc">Prevents overheating by throttling performance or shutting down components when temperature limits are reached.</string>
+    <string name="thermal_throttle_temp">Frequency Throttle Temp</string>
+    <string name="thermal_throttle_temp_desc">Temperature at which the kernel starts reducing CPU/GPU frequencies to cool down.</string>
+    <string name="thermal_core_temp">Core Shutdown Temp</string>
+    <string name="thermal_core_temp_desc">Critical temperature at which specific CPU cores are disabled to prevent hardware damage.</string>
+
+    <!-- Memory Screen -->
+    <string name="mem_desc">Virtual memory allows the system to compensate for physical RAM shortages by storing data in compressed form.</string>
+    <string name="mem_zram_usage">Z-RAM Usage</string>
+    <string name="mem_zram_size">Z-RAM Size</string>
+    <string name="mem_zram_size_desc">Allocates a portion of physical RAM to be used as a compressed swap device, effectively increasing available memory.</string>
+    <string name="mem_zram_algo">Compression Algorithm</string>
+    <string name="mem_zram_algo_desc">Determines the trade-off between compression ratio and CPU overhead. LZ4 is typically the fastest.</string>
+    <string name="mem_swappiness">Swappiness</string>
+    <string name="mem_swappiness_desc">Controls how aggressively the kernel swaps data from physical RAM to Z-RAM. Higher values increase multitasking capability but can slow down the UI under heavy load.</string>
+    <string name="mem_vfs_cache">VFS Cache Pressure</string>
+    <string name="mem_vfs_cache_desc">Governs the tendency of the kernel to reclaim memory used for caching directory and inode objects. Lower values keep more cache in RAM, potentially speeding up file access.</string>
+    <string name="mem_dirty_ratio">Dirty Ratio</string>
+    <string name="mem_dirty_ratio_desc">Maximum percentage of memory for dirty pages. High values allow more data to be cached before writing to disk, improving burst performance.</string>
+    <string name="mem_dirty_bg_ratio">Dirty Background Ratio</string>
+    <string name="mem_dirty_bg_ratio_desc">Percentage of memory at which background disk writes begin. Lowering this can prevent sudden I/O spikes.</string>
+    <string name="mem_extra_free">Extra Free Kilobytes</string>
+    <string name="mem_extra_free_desc">Forces the kernel to keep a specific amount of RAM free. Can prevent LMK lag by having memory ready for new apps.</string>
+    <string name="mem_laptop_mode">Laptop Mode</string>
+    <string name="mem_laptop_mode_desc">Delays disk write-backs while the screen is on to improve UI responsiveness and save battery.</string>
+
+    <!-- I/O Screen -->
+    <string name="io_desc">The I/O scheduler decides the order in which read and write requests are sent to the storage device.</string>
+    <string name="io_read_ahead">Read-ahead Size</string>
+    <string name="io_read_ahead_desc">Predicts future read requests by loading more data than requested into RAM. Larger values can improve sequential read speeds.</string>
+    <string name="io_sched">I/O Scheduler</string>
+    <string name="io_sched_desc">Algorithm used to optimize disk access. Examples: CFQ (fairness), Deadline (latency), NOOP (for SSDs).</string>
+    <string name="io_crc">Software CRC Control</string>
+    <string name="io_crc_desc">Disabling software Cyclic Redundancy Check can improve write performance by skipping data verification overhead.</string>
+
+    <!-- Profiles -->
+    <string name="prof_desc">Manage configuration profiles to quickly switch between performance, balanced, and battery-saving modes.</string>
+    <string name="prof_create">Create New Profile</string>
+    <string name="prof_none">No profiles saved.</string>
+    <string name="prof_save_title">Save Profile</string>
+    <string name="prof_name_hint">Profile Name</string>
+    <string name="prof_apply">Apply</string>
+    <string name="prof_delete">Delete</string>
+    <string name="zram_applying">Configuring Z-RAM, please wait…</string>
+
+    <!-- Settings -->
+    <string name="settings_desc">Configure app behavior and global application settings.</string>
+    <string name="settings_boot">Apply on Boot</string>
+    <string name="settings_boot_desc">Automatically re-applies all saved kernel settings after the device has finished starting up.</string>
+    <string name="settings_boot_delay">Apply Delay</string>
+    <string name="settings_boot_delay_desc">Wait specified time after boot before applying settings. Useful if system is still initializing.</string>
+    <string name="settings_theme">App Theme</string>
+
+    <!-- About -->
+    <string name="about_main_desc">Synapse is a comprehensive kernel management tool providing advanced control over CPU, GPU, Memory, and more.</string>
+    <string name="about_inspired">Inspired by the legendary Synapse app by AndreiLux and apb_axel.</string>
+    <string name="about_ai">Developed with Gemini AI</string>
+    <string name="about_dev">Developer: yarpiin</string>
+    <string name="about_support">If you like my work:</string>
+    <string name="about_donate">Donate via PayPal</string>
+    <!-- Advanced Screen -->
+    <string name="adv_desc">Miscellaneous advanced kernel settings. Do not change them unless you know what you are doing.</string>
+    <string name="adv_krait">Krait C-States</string>
+    <string name="adv_krait_desc">Low-power sleep states for Qualcomm Krait CPUs. C0 is shallowest (fast wake), C3 is deepest (power collapse).</string>
+    <string name="adv_ksm">Kernel Samepage Merging (KSM)</string>
+    <string name="adv_ksm_desc">Deduplicates identical memory pages in RAM to save space. Can increase CPU usage slightly.</string>
+    <string name="adv_uksm">Ultra KSM (UKSM)</string>
+    <string name="adv_uksm_desc">An enhanced version of KSM with better performance and lower CPU overhead.</string>
+    <string name="adv_adaptive_lmk">Adaptive Low Memory Killer</string>
+    <string name="adv_adaptive_lmk_desc">Dynamically adjusts memory pressure thresholds to prevent system lag when RAM is low.</string>
+    <string name="adv_workqueues">Power Efficient Workqueues</string>
+    <string name="adv_workqueues_desc">Tries to schedule system tasks on more power-efficient cores to save battery.</string>
+    <string name="adv_fsync">FSYNC Control</string>
+    <string name="adv_fsync_desc">Controls file system synchronization. Disabling increases speed but risks data loss on crash.</string>
+    <string name="adv_wakelocks">Wakelock Control</string>
+    <string name="adv_wakelocks_desc">Allows blocking specific drivers from keeping the device awake to improve deep sleep.</string>
+
+    <!-- Misc Screen -->
+    <string name="misc_desc">General system utilities and global kernel toggles.</string>
+    <string name="misc_reboot">Advanced Reboot</string>
+    <string name="misc_reboot_desc">Quick access to reboot into specialized system modes.</string>
+    <string name="misc_tcp">TCP Congestion Control</string>
+    <string name="misc_tcp_desc">Determines how the network stack handles data flow. Different algorithms can optimize WiFi/LTE speeds.</string>
+    <string name="misc_logging">System Logging (Logcat)</string>
+    <string name="misc_logging_desc">Disabling Android logging can slightly improve performance and reduce overhead.</string>
+
+    <!-- Hotplug Screen -->
+    <string name="hotplug_desc">Hotplug drivers dynamically enable or disable CPU cores to save power during low system load.</string>
+    <string name="hotplug_warning">Use only one hotplug driver at a time. Using multiple can cause system instability.</string>
+    <string name="hotplug_eas">Energy Aware Scheduling (EAS)</string>
+    <string name="hotplug_eas_desc">Modern scheduler that uses a power model to decide task placement for best efficiency.</string>
+    <string name="hotplug_cpuset">CPU Sets</string>
+    <string name="hotplug_cpuset_desc">Restricts specific groups of processes to a subset of CPU cores (e.g., system tasks on efficient cores).</string>
+
+    <!-- CPU Boost Screen -->
+    <string name="boost_desc">Boost technologies temporarily increase CPU/GPU performance in response to user interaction.</string>
+    <string name="boost_input">CPU Input Boost</string>
+    <string name="boost_input_desc">Increases CPU frequency when touch input is detected to improve responsiveness.</string>
+    <string name="boost_adreno">Adreno Boost</string>
+    <string name="boost_adreno_desc">Specifically for the GPU, increases frequency during high-load rendering tasks.</string>
+
+    <!-- CPU Descriptions -->
+    <string name="cpu_silver_desc">Power efficient cores designed for background tasks and low power consumption.</string>
+    <string name="cpu_gold_desc">High performance cores for demanding applications and multitasking.</string>
+    <string name="cpu_perf_desc">Prime core designed for maximum single-threaded performance.</string>
+    <string name="cpu_generic_desc">Central Processing Unit frequency scaling and governor control.</string>
+
+</resources>

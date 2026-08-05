@@ -1,0 +1,163 @@
+<resources>
+    <string name="app_name">Synapse</string>
+    <string name="unknown">Nieznany</string>
+
+    <!-- Nawigacja -->
+    <string name="nav_summary">Podsumowanie</string>
+    <string name="nav_cpu_silver">Rdzenie Silver</string>
+    <string name="nav_cpu_gold">Rdzenie Gold</string>
+    <string name="nav_cpu_perf">Rdzenie Performance</string>
+    <string name="nav_gpu">Sterowanie GPU</string>
+    <string name="nav_thermal">Termika</string>
+    <string name="nav_memory">Pamięć RAM</string>
+    <string name="nav_io">Harmonogram I/O</string>
+    <string name="nav_advanced">Zaawansowane</string>
+    <string name="nav_misc">Różne</string>
+    <string name="nav_profiles">Profile</string>
+    <string name="nav_settings">Ustawienia</string>
+    <string name="nav_about">O aplikacji</string>
+
+    <!-- Ekran podsumowania -->
+    <string name="summary_desc">Podsumowanie stanu urządzenia i kluczowych parametrów sprzętowych.</string>
+    <string name="summary_system">System</string>
+    <string name="header_rom">ROM / System</string>
+    <string name="summary_model">Model</string>
+    <string name="summary_android_ver">Wersja Androida</string>
+    <string name="summary_kernel_ver">Wersja jądra</string>
+    <string name="summary_build_type">Typ kompilacji</string>
+    <string name="summary_compilation">Kompilacja</string>
+    <string name="summary_cpu">Procesor (CPU)</string>
+    <string name="summary_clusters">Liczba klastrów</string>
+    <string name="summary_gpu">Grafika (GPU)</string>
+    <string name="summary_ram">Pamięć (RAM)</string>
+    <string name="summary_thermal">Termika (SoC)</string>
+    <string name="summary_peak">Szczytowa</string>
+    <string name="summary_avg">Średnia</string>
+
+    <!-- Ekran CPU -->
+    <string name="cpu_min_freq">Częstotliwość minimalna</string>
+    <string name="cpu_min_freq_desc">Najniższe taktowanie, do którego procesor może zejść w stanie bezczynności, aby oszczędzać baterię.</string>
+    <string name="cpu_max_freq">Częstotliwość maksymalna</string>
+    <string name="cpu_max_freq_desc">Najwyższe taktowanie, do którego procesor może wzrosnąć pod dużym obciążeniem dla maksymalnej wydajności.</string>
+    <string name="cpu_governor">Zarządca CPU</string>
+    <string name="cpu_governor_desc">Algorytm sterujący tym, jak szybko procesor zwiększa lub zmniejsza taktowanie w zależności od obciążenia systemu.</string>
+    <string name="cpu_tunables">Parametry zarządcy</string>
+
+    <!-- Ekran GPU -->
+    <string name="gpu_desc">Zarządzanie częstotliwością i skalowaniem układu graficznego.</string>
+    <string name="gpu_min_freq">Min. częstotliwość GPU</string>
+    <string name="gpu_min_freq_desc">Najniższe taktowanie układu graficznego używane w scenariuszach 2D lub przy niskim obciążeniu.</string>
+    <string name="gpu_max_freq">Maks. częstotliwość GPU</string>
+    <string name="gpu_max_freq_desc">Maksymalne taktowanie dla wysokiej wydajności w grach 3D i podczas renderowania interfejsu.</string>
+    <string name="gpu_governor">Zarządca GPU</string>
+    <string name="gpu_governor_desc">Logika odpowiedzialna za zarządzanie energią i stopniami częstotliwości układu graficznego.</string>
+
+    <!-- Ekran Termiki -->
+    <string name="thermal_desc">Zapobiega przegrzaniu poprzez dławienie wydajności lub wyłączanie komponentów po osiągnięciu limitów temperatury.</string>
+    <string name="thermal_throttle_temp">Temp. dławienia taktowania</string>
+    <string name="thermal_throttle_temp_desc">Temperatura, przy której jądro zaczyna redukować częstotliwości CPU/GPU w celu schłodzenia.</string>
+    <string name="thermal_core_temp">Temp. wyłączania rdzeni</string>
+    <string name="thermal_core_temp_desc">Krytyczna temperatura, przy której poszczególne rdzenie są wyłączane, aby zapobiec uszkodzeniu sprzętu.</string>
+
+    <!-- Ekran Pamięci -->
+    <string name="mem_desc">Pamięć wirtualna pozwala systemowi kompensować niedobory fizycznej pamięci RAM poprzez przechowywanie danych w skompresowanej formie.</string>
+    <string name="mem_zram_usage">Użycie Z-RAM</string>
+    <string name="mem_zram_size">Rozmiar Z-RAM</string>
+    <string name="mem_zram_size_desc">Przydziela część fizycznej pamięci RAM do użytku jako skompresowane urządzenie wymiany, efektywnie zwiększając dostępną pamięć.</string>
+    <string name="mem_zram_algo">Algorytm kompresji</string>
+    <string name="mem_zram_algo_desc">Określa kompromis między stopniem kompresji a obciążeniem procesora. LZ4 jest zazwyczaj najszybszy.</string>
+    <string name="mem_swappiness">Agresywność wymiany (Swappiness)</string>
+    <string name="mem_swappiness_desc">Kontroluje, jak agresywnie jądro przenosi dane do Z-RAM. Wyższe wartości zwiększają wielozadaniowość, ale mogą spowolnić interfejs przy dużym obciążeniu.</string>
+    <string name="mem_vfs_cache">Presja na cache VFS</string>
+    <string name="mem_vfs_cache_desc">Zarządza odzyskiwaniem pamięci używanej do buforowania katalogów. Niższe wartości zatrzymują więcej danych w RAM, przyspieszając dostęp do plików.</string>
+    <string name="mem_dirty_ratio">Współczynnik brudnych stron</string>
+    <string name="mem_dirty_ratio_desc">Maksymalny procent pamięci dla brudnych stron. Wysokie wartości pozwalają na buforowanie większej ilości danych przed zapisem na dysk.</string>
+    <string name="mem_dirty_bg_ratio">Tło brudnych stron (Dirty BG)</string>
+    <string name="mem_dirty_bg_ratio_desc">Procent pamięci, przy którym rozpoczyna się zapis w tle. Obniżenie zapobiega nagłym skokom obciążenia I/O.</string>
+    <string name="mem_extra_free">Dodatkowe wolne KB</string>
+    <string name="mem_extra_free_desc">Wymusza na jądrze utrzymywanie wolnej pamięci RAM. Zapobiega lagom LMK, mając gotową pamięć dla nowych aplikacji.</string>
+    <string name="mem_laptop_mode">Tryb laptopa</string>
+    <string name="mem_laptop_mode_desc">Opóźnia operacje zapisu na dysk, gdy ekran jest włączony, aby poprawić płynność interfejsu i oszczędzać baterię.</string>
+
+    <!-- Ekran I/O -->
+    <string name="io_desc">Harmonogram I/O decyduje o kolejności, w jakiej żądania odczytu i zapisu są wysyłane do pamięci masowej.</string>
+    <string name="io_read_ahead">Rozmiar odczytu z wyprzedzeniem</string>
+    <string name="io_read_ahead_desc">Przewiduje przyszłe żądania odczytu, ładując do RAM więcej danych niż zażądano. Większe wartości mogą poprawić szybkość odczytu sekwencyjnego.</string>
+    <string name="io_sched">Harmonogram I/O</string>
+    <string name="io_sched_desc">Algorytm używany do optymalizacji dostępu do dysku. Przykłady: CFQ (sprawiedliwość), Deadline (opóźnienia), NOOP (dla SSD).</string>
+    <string name="io_crc">Programowa kontrola CRC</string>
+    <string name="io_crc_desc">Wyłączenie programowej weryfikacji sum kontrolnych może poprawić wydajność zapisu poprzez pominięcie narzutu weryfikacji danych.</string>
+
+    <!-- Profile -->
+    <string name="prof_desc">Zarządzaj profilami konfiguracji, aby szybko przełączać się między trybami wydajności, równowagi i oszczędzania energii.</string>
+    <string name="prof_create">Utwórz nowy profil</string>
+    <string name="prof_none">Brak zapisanych profili.</string>
+    <string name="prof_save_title">Zapisz profil</string>
+    <string name="prof_name_hint">Nazwa profilu</string>
+    <string name="prof_apply">Zastosuj</string>
+    <string name="prof_delete">Usuń</string>
+    <string name="zram_applying">Konfiguracja Z-RAM, proszę czekać…</string>
+
+    <!-- Ustawienia -->
+    <string name="settings_desc">Konfiguracja zachowania i globalnych ustawień aplikacji.</string>
+    <string name="settings_boot">Zastosuj przy starcie</string>
+    <string name="settings_boot_desc">Automatycznie przywraca wszystkie zapisane ustawienia jądra po zakończeniu uruchamiania urządzenia.</string>
+    <string name="settings_boot_delay">Opóźnienie zastosowania</string>
+    <string name="settings_boot_delay_desc">Odczekaj określony czas po uruchomieniu przed nałożeniem ustawień. Pomocne, gdy system wciąż się inicjalizuje.</string>
+    <string name="settings_theme">Motyw aplikacji</string>
+
+    <!-- O aplikacji -->
+    <string name="about_main_desc">Synapse to wszechstronne narzędzie do zarządzania jądrem systemu, zapewniające zaawansowaną kontrolę nad procesorem, układem graficznym, pamięcią i wieloma innymi parametrami.</string>
+    <string name="about_inspired">Zainspirowane legendarną aplikacją Synapse autorstwa AndreiLux oraz apb_axel.</string>
+    <string name="about_ai">Opracowano przy wsparciu Gemini AI</string>
+    <string name="about_dev">Programista: yarpiin</string>
+    <string name="about_support">Jeśli podoba Ci się moja praca:</string>
+    <string name="about_donate">Wesprzyj przez PayPal</string>
+    <!-- Zaawansowane -->
+    <string name="adv_desc">Różne zaawansowane ustawienia jądra. Nie zmieniaj ich, jeśli nie wiesz, co robisz.</string>
+    <string name="adv_krait">Stany uśpienia Krait (C-States)</string>
+    <string name="adv_krait_desc">Stany niskiego poboru mocy dla procesorów Krait. C0 to najpłytszy sen, C3 to całkowite wyłączenie zasilania rdzenia.</string>
+    <string name="adv_ksm">Łączenie identycznych stron (KSM)</string>
+    <string name="adv_ksm_desc">Usuwa duplikaty stron pamięci w RAM, aby zaoszczędzić miejsce. Może nieznacznie zwiększyć zużycie CPU.</string>
+    <string name="adv_uksm">Ultra KSM (UKSM)</string>
+    <string name="adv_uksm_desc">Ulepszona wersja KSM oferująca lepszą wydajność i mniejszy narzut na procesor.</string>
+    <string name="adv_adaptive_lmk">Adaptacyjny Low Memory Killer</string>
+    <string name="adv_adaptive_lmk_desc">Dynamicznie dostosowuje progi zwalniania pamięci, aby zapobiec zacinaniu systemu przy małej ilości RAM.</string>
+    <string name="adv_workqueues">Energooszczędne kolejki robocze</string>
+    <string name="adv_workqueues_desc">Próbuje planować zadania systemowe na rdzeniach o mniejszym poborze mocy, aby oszczędzać baterię.</string>
+    <string name="adv_fsync">Kontrola FSYNC</string>
+    <string name="adv_fsync_desc">Zarządza synchronizacją systemu plików. Wyłączenie przyspiesza działanie, ale ryzykuje utratę danych przy awarii.</string>
+    <string name="adv_wakelocks">Kontrola blokad wybudzania (Wakelocks)</string>
+    <string name="adv_wakelocks_desc">Pozwala blokować specyficzne sterowniki przed wybudzaniem urządzenia, poprawiając głęboki sen.</string>
+
+    <!-- Różne -->
+    <string name="misc_desc">Ogólne narzędzia systemowe i globalne przełączniki jądra.</string>
+    <string name="misc_reboot">Zaawansowany restart</string>
+    <string name="misc_reboot_desc">Szybki dostęp do restartu urządzenia w specjalnych trybach systemowych.</string>
+    <string name="misc_tcp">Kontrola zatłoczenia TCP</string>
+    <string name="misc_tcp_desc">Określa, jak stos sieciowy obsługuje przepływ danych. Różne algorytmy mogą zoptymalizować prędkość WiFi/LTE.</string>
+    <string name="misc_logging">Logowanie systemowe (Logcat)</string>
+    <string name="misc_logging_desc">Wyłączenie logowania Androida może nieznacznie poprawić wydajność i zmniejszyć narzut systemowy.</string>
+
+    <!-- Hotplug -->
+    <string name="hotplug_desc">Sterowniki hotplug dynamicznie włączają lub wyłączają rdzenie CPU, aby oszczędzać energię przy małym obciążeniu.</string>
+    <string name="hotplug_warning">Używaj tylko jednego sterownika hotplug naraz. Korzystanie z wielu może powodować niestabilność systemu.</string>
+    <string name="hotplug_eas">Energy Aware Scheduling (EAS)</string>
+    <string name="hotplug_eas_desc">Nowoczesny harmonogram używający modelu mocy do decydowania o rozmieszczeniu zadań dla najlepszej wydajności.</string>
+    <string name="hotplug_cpuset">Zestawy CPU (CPU Sets)</string>
+    <string name="hotplug_cpuset_desc">Ogranicza specyficzne grupy procesów do podzbioru rdzeni CPU (np. zadania systemowe na rdzeniach energooszczędnych).</string>
+
+    <!-- CPU Boost -->
+    <string name="boost_desc">Technologie Boost tymczasowo zwiększają wydajność CPU/GPU w odpowiedzi na interakcję z użytkownikiem.</string>
+    <string name="boost_input">CPU Input Boost</string>
+    <string name="boost_input_desc">Zwiększa częstotliwość CPU po wykryciu dotyku ekranu, aby poprawić płynność reakcji.</string>
+    <string name="boost_adreno">Adreno Boost</string>
+    <string name="boost_adreno_desc">Specyficzne dla układu graficznego, zwiększa taktowanie podczas wymagających zadań renderowania.</string>
+
+    <!-- CPU Opisy -->
+    <string name="cpu_silver_desc">Energooszczędne rdzenie zaprojektowane do zadań w tle i niskiego poboru mocy.</string>
+    <string name="cpu_gold_desc">Wydajne rdzenie do wymagających aplikacji i wielozadaniowości.</string>
+    <string name="cpu_perf_desc">Główny rdzeń zaprojektowany dla maksymalnej wydajności jednowątkowej.</string>
+    <string name="cpu_generic_desc">Zarządzanie taktowaniem i skalowaniem częstotliwości procesora.</string>
+
+</resources>
