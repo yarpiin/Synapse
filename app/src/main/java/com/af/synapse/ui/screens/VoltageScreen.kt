@@ -62,6 +62,7 @@ fun VoltageScreen() {
 
         // 1. Global Voltage Offset
         if (vddLevels.isNotEmpty() || uvMvTable.isNotEmpty()) {
+            val primaryColor = MaterialTheme.colorScheme.primary
             AdvancedSection(title = stringResource(R.string.volt_global)) {
                 var globalOffset by remember { mutableFloatStateOf(0f) }
                 
@@ -82,7 +83,7 @@ fun VoltageScreen() {
                     },
                     valueRange = -300f..300f,
                     steps = 119, // 5mV steps
-                    colors = SliderDefaults.colors(thumbColor = com.af.synapse.ui.theme.PixelBlue)
+                    colors = SliderDefaults.colors(thumbColor = primaryColor)
                 )
                 Text(
                     text = "${globalOffset.toInt()} mV",
@@ -95,6 +96,7 @@ fun VoltageScreen() {
 
         // 2. Individual Frequency Voltages
         if (vddLevels.isNotEmpty()) {
+            val primaryColor = MaterialTheme.colorScheme.primary
             AdvancedSection(title = stringResource(R.string.volt_freq)) {
                 vddLevels.forEach { entry ->
                     var currentVolt by remember(entry.voltage) { mutableFloatStateOf(entry.voltage.toFloat()) }
@@ -108,13 +110,14 @@ fun VoltageScreen() {
                             },
                             valueRange = 500000f..1400000f,
                             steps = 179, // 5000 uV steps or adjust as needed
-                            colors = SliderDefaults.colors(thumbColor = com.af.synapse.ui.theme.PixelBlue)
+                            colors = SliderDefaults.colors(thumbColor = primaryColor)
                         )
                         Text(text = "${currentVolt.toInt()} uV", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                     }
                 }
             }
         } else if (uvMvTable.isNotEmpty()) {
+            val primaryColor = MaterialTheme.colorScheme.primary
             AdvancedSection(title = stringResource(R.string.volt_freq)) {
                 uvMvTable.forEach { entry ->
                     var currentVolt by remember(entry.voltage) { mutableFloatStateOf(entry.voltage.toFloat()) }
@@ -128,7 +131,7 @@ fun VoltageScreen() {
                             },
                             valueRange = 500f..1400f,
                             steps = 900,
-                            colors = SliderDefaults.colors(thumbColor = com.af.synapse.ui.theme.PixelBlue)
+                            colors = SliderDefaults.colors(thumbColor = primaryColor)
                         )
                         Text(text = "${currentVolt.toInt()} mV", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                     }
@@ -145,6 +148,7 @@ fun VoltageScreen() {
 
         // 4. Core Voltages
         if (customCoreVoltages.isNotEmpty()) {
+            val primaryColor = MaterialTheme.colorScheme.primary
             AdvancedSection(title = stringResource(R.string.volt_core)) {
                 customCoreVoltages.forEach { entry ->
                     val path = "/sys/devices/virtual/misc/customvoltage/core_voltages"
@@ -160,7 +164,7 @@ fun VoltageScreen() {
                                 com.af.synapse.data.SettingsStore.trackSetting("corevolt_${entry.frequency}", "${entry.frequency} ${currentVolt.toInt()}")
                             },
                             valueRange = 700f..1500f,
-                            colors = SliderDefaults.colors(thumbColor = com.af.synapse.ui.theme.PixelBlue)
+                            colors = SliderDefaults.colors(thumbColor = primaryColor)
                         )
                         Text(text = "${currentVolt.toInt()} ${entry.unit}", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                     }
@@ -170,6 +174,7 @@ fun VoltageScreen() {
 
         // 5. IVA Voltages
         if (customIvaVoltages.isNotEmpty()) {
+            val primaryColor = MaterialTheme.colorScheme.primary
             AdvancedSection(title = stringResource(R.string.volt_iva)) {
                 customIvaVoltages.forEach { entry ->
                     val path = "/sys/devices/virtual/misc/customvoltage/iva_voltages"
@@ -184,7 +189,7 @@ fun VoltageScreen() {
                                 com.af.synapse.data.SettingsStore.trackSetting("ivavolt_${entry.frequency}", "${entry.frequency} ${currentVolt.toInt()}")
                             },
                             valueRange = 700f..1500f,
-                            colors = SliderDefaults.colors(thumbColor = com.af.synapse.ui.theme.PixelBlue)
+                            colors = SliderDefaults.colors(thumbColor = primaryColor)
                         )
                         Text(text = "${currentVolt.toInt()} ${entry.unit}", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                     }

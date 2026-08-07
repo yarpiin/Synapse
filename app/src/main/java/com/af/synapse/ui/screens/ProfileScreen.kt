@@ -1,11 +1,15 @@
 package com.af.synapse.ui.screens
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
@@ -15,13 +19,19 @@ import androidx.compose.ui.unit.sp
 import com.af.synapse.R
 import com.af.synapse.data.ProfileManager
 
+import androidx.compose.foundation.shape.RoundedCornerShape
+
 @Composable
 fun ProfileScreen() {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
-    var profiles by remember { mutableStateOf(ProfileManager.getProfiles(context)) }
+    val profiles by ProfileManager.profilesFlow.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
     var newProfileName by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        ProfileManager.refreshProfiles(context)
+    }
 
     Column(
         modifier = Modifier
@@ -39,9 +49,14 @@ fun ProfileScreen() {
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
         )
 
+        val interactionSource = remember { MutableInteractionSource() }
+        val isPressed by interactionSource.collectIsPressedAsState()
+        val scale by animateFloatAsState(if (isPressed) 0.96f else 1f, label = "bounce")
+
         Button(
             onClick = { showCreateDialog = true },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().graphicsLayer(scaleX = scale, scaleY = scale),
+            interactionSource = interactionSource
         ) {
             Text(stringResource(R.string.prof_create))
         }
@@ -60,7 +75,6 @@ fun ProfileScreen() {
                     onApply = { ProfileManager.applyProfile(context, profileName) },
                     onDelete = { 
                         ProfileManager.deleteProfile(context, profileName)
-                        profiles = ProfileManager.getProfiles(context)
                     }
                 )
             }
@@ -81,17 +95,32 @@ fun ProfileScreen() {
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    if (newProfileName.isNotBlank()) {
-                        ProfileManager.saveProfile(context, newProfileName)
-                        profiles = ProfileManager.getProfiles(context)
-                        newProfileName = ""
-                        showCreateDialog = false
-                    }
-                }) { Text(stringResource(R.string.prof_apply)) }
+                val confirmInteraction = remember { MutableInteractionSource() }
+                val isConfirmPressed by confirmInteraction.collectIsPressedAsState()
+                val confirmScale by animateFloatAsState(if (isConfirmPressed) 0.92f else 1f, label = "bounce")
+
+                TextButton(
+                    onClick = {
+                        if (newProfileName.isNotBlank()) {
+                            ProfileManager.saveProfile(context, newProfileName)
+                            newProfileName = ""
+                            showCreateDialog = false
+                        }
+                    },
+                    interactionSource = confirmInteraction,
+                    modifier = Modifier.graphicsLayer(scaleX = confirmScale, scaleY = confirmScale)
+                ) { Text(stringResource(R.string.prof_apply)) }
             },
             dismissButton = {
-                TextButton(onClick = { showCreateDialog = false }) { Text("Cancel") }
+                val dismissInteraction = remember { MutableInteractionSource() }
+                val isDismissPressed by dismissInteraction.collectIsPressedAsState()
+                val dismissScale by animateFloatAsState(if (isDismissPressed) 0.92f else 1f, label = "bounce")
+
+                TextButton(
+                    onClick = { showCreateDialog = false },
+                    interactionSource = dismissInteraction,
+                    modifier = Modifier.graphicsLayer(scaleX = dismissScale, scaleY = dismissScale)
+                ) { Text("Cancel") }
             }
         )
     }
@@ -110,8 +139,32 @@ fun ProfileItem(name: String, onApply: () -> Unit, onDelete: () -> Unit) {
         ) {
             Text(text = name, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = onApply) { Text(stringResource(R.string.prof_apply)) }
-                TextButton(onClick = onDelete, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text(stringResource(R.string.prof_delete)) }
+                val applyInteraction = remember { MutableInteractionSource() }
+                val isApplyPressed by applyInteraction.collectIsPressedAsState()
+                val applyScale by animateFloatAsState(if (isApplyPressed) 0.92f else 1f, label = "bounce")
+
+                OutlinedButton(
+                    onClick = onApply,
+                    interactionSource = applyInteraction,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.graphicsLayer(scaleX = applyScale, scaleY = applyScale)
+                ) { 
+                    Text(stringResource(R.string.prof_apply), fontSize = 11.sp) 
+                }
+
+                val deleteInteraction = remember { MutableInteractionSource() }
+                val isDeletePressed by deleteInteraction.collectIsPressedAsState()
+                val deleteScale by animateFloatAsState(if (isDeletePressed) 0.92f else 1f, label = "bounce")
+
+                Button(
+                    onClick = onDelete,
+                    interactionSource = deleteInteraction,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.graphicsLayer(scaleX = deleteScale, scaleY = deleteScale),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { 
+                    Text(stringResource(R.string.prof_delete), fontSize = 11.sp)
+                }
             }
         }
     }

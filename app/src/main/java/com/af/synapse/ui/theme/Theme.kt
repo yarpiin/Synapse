@@ -16,31 +16,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val DarkColorScheme = darkColorScheme(
-    primary = PixelBlue,
-    secondary = Color(0xFF8AB4F8),
-    tertiary = Color(0xFFADCCF7),
-    background = Color(0xFF000000), // Pure black for OLED
-    surface = Color(0xFF121212),
-    surfaceVariant = Color(0xFF000000), // Black as requested for sliders/progress tracks
-    onSurface = TextWhite,
-    onSurfaceVariant = TextLightGray
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = PixelBlue,
-    secondary = Color(0xFF1967D2),
-    tertiary = Color(0xFF185ABC),
-    background = Color(0xFFFFFFFF),
-    surface = Color(0xFFF8F9FA),
-    surfaceVariant = Color(0xFFE1E3E1),
-    onSurface = TextBlack,
-    onSurfaceVariant = TextDarkGray
-)
-
 @Composable
 fun SynapseTheme(
     themeOverride: Int = com.af.synapse.data.SettingsStore.getThemeMode(),
+    accentColorOverride: Color = Color(com.af.synapse.data.SettingsStore.getAccentColor()),
     darkTheme: Boolean = when (themeOverride) {
         1 -> false
         2 -> true
@@ -50,12 +29,35 @@ fun SynapseTheme(
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
+    
+    val currentDarkColorScheme = darkColorScheme(
+        primary = accentColorOverride,
+        secondary = accentColorOverride.copy(alpha = 0.8f),
+        tertiary = accentColorOverride.copy(alpha = 0.6f),
+        background = Color(0xFF000000),
+        surface = Color(0xFF121212),
+        surfaceVariant = Color(0xFF000000),
+        onSurface = TextWhite,
+        onSurfaceVariant = TextLightGray
+    )
+
+    val currentLightColorScheme = lightColorScheme(
+        primary = accentColorOverride,
+        secondary = accentColorOverride.copy(alpha = 0.8f),
+        tertiary = accentColorOverride.copy(alpha = 0.6f),
+        background = Color(0xFFFFFFFF),
+        surface = Color(0xFFF8F9FA),
+        surfaceVariant = Color(0xFFE1E3E1),
+        onSurface = TextBlack,
+        onSurfaceVariant = TextDarkGray
+    )
+
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val base = if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             if (darkTheme) {
                 base.copy(
-                    primary = PixelBlue,
+                    primary = accentColorOverride,
                     background = Color.Black,
                     surface = Color(0xFF121212),
                     surfaceVariant = Color.Black,
@@ -64,14 +66,15 @@ fun SynapseTheme(
                 )
             } else {
                 base.copy(
-                    primary = PixelBlue,
+                    primary = accentColorOverride,
                     surfaceVariant = Color(0xFFF1F3F4)
                 )
             }
         }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        darkTheme -> currentDarkColorScheme
+        else -> currentLightColorScheme
     }
+
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {

@@ -23,7 +23,6 @@ import com.af.synapse.data.GpuManager
 import com.af.synapse.data.GenericManager
 import com.af.synapse.data.MonitorManager
 import com.af.synapse.data.BatteryManager
-import com.af.synapse.ui.theme.PixelBlue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -44,9 +43,17 @@ fun SummaryScreen() {
     var kernelVer by remember { mutableStateOf("Unknown") }
     var batteryStats by remember { mutableStateOf<BatteryManager.BatteryStats?>(null) }
 
-    // Fetch static data off-thread
+    // Path existence checks
+    var hasCpuPolicy by remember { mutableStateOf(false) }
+    var hasGpu by remember { mutableStateOf(false) }
+    var hasBatteryPath by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
+            hasCpuPolicy = GenericManager.exists("/sys/devices/system/cpu/cpufreq/policy0")
+            hasGpu = GpuManager.getGpuPath() != null
+            hasBatteryPath = GenericManager.exists("/sys/class/power_supply/battery/capacity")
+
             // SoC Detection
             var detected: String? = null
             if (android.os.Build.VERSION.SDK_INT >= 31) {
@@ -89,7 +96,6 @@ fun SummaryScreen() {
         }
     }
 
-    // Update battery stats when temperatures change (which is the refresh signal)
     LaunchedEffect(temperatures) {
         withContext(Dispatchers.IO) {
             val stats = BatteryManager.getBatteryStats()
@@ -104,7 +110,7 @@ fun SummaryScreen() {
             .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // 1. Header: Big Device Name and Chip Image
+        // 1. Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -115,7 +121,7 @@ fun SummaryScreen() {
                     text = manufacturer,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Black,
-                    color = PixelBlue,
+                    color = MaterialTheme.colorScheme.primary,
                     letterSpacing = 2.sp
                 )
                 Text(
@@ -136,78 +142,81 @@ fun SummaryScreen() {
         }
 
         // 2. Processor Section
-        SummaryDashboardSection(title = stringResource(R.string.summary_cpu)) {
-            val clusters = CpuManager.getAvailableClusters()
-            var totalCores = 0
-            clusters.forEach { totalCores += CpuManager.getClusterCpus(it).size }
-            
-            val coreCountText = when(totalCores) {
-                4 -> "Quad-core Processor"
-                8 -> "Octa-core Processor"
-                10 -> "Deca-core Processor"
-                else -> "$totalCores-core Processor"
-            }
-
-            Text(
-                text = socName,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.ExtraBold,
-                fontStyle = FontStyle.Italic,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Text(
-                text = coreCountText,
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
-            
-            // Fixed: Real SoC temperature from zone_12
-            val socTemp = temperatures.find { it.key == "zone_12" }?.value ?: 0f
-            if (socTemp > 0) {
-                SummaryDashboardRow(stringResource(R.string.summary_soc_temp), String.format(Locale.US, "%.1f°C", socTemp))
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            clusters.forEachIndexed { index, i ->
-                val cpus = CpuManager.getClusterCpus(i)
-                val label = when(index) {
-                    0 -> stringResource(R.string.nav_cpu_silver)
-                    1 -> stringResource(R.string.nav_cpu_gold)
-                    2 -> stringResource(R.string.nav_cpu_perf)
-                    else -> "Cluster $index"
+        if (hasCpuPolicy) {
+            SummaryDashboardSection(title = stringResource(R.string.summary_cpu)) {
+                val clusters = CpuManager.getAvailableClusters()
+                var totalCores = 0
+                clusters.forEach { totalCores += CpuManager.getClusterCpus(it).size }
+                
+                val coreCountText = when(totalCores) {
+                    4 -> "Quad-core Processor"
+                    8 -> "Octa-core Processor"
+                    10 -> "Deca-core Processor"
+                    else -> "$totalCores-core Processor"
                 }
-                SummaryDashboardRow(label, "Cores ${cpus.first()}-${cpus.last()}")
+
+                Text(
+                    text = socName,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontStyle = FontStyle.Italic,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Text(
+                    text = coreCountText,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                val socTemp = temperatures.find { it.key == "zone_12" }?.value ?: 0f
+                if (socTemp > 0) {
+                    SummaryDashboardRow(stringResource(R.string.summary_soc_temp), String.format(Locale.US, "%.1f°C", socTemp))
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                clusters.forEachIndexed { index, i ->
+                    val cpus = CpuManager.getClusterCpus(i)
+                    val label = when(index) {
+                        0 -> stringResource(R.string.nav_cpu_silver)
+                        1 -> stringResource(R.string.nav_cpu_gold)
+                        2 -> stringResource(R.string.nav_cpu_perf)
+                        else -> "Cluster $index"
+                    }
+                    SummaryDashboardRow(label, "Cores ${cpus.first()}-${cpus.last()}")
+                }
             }
         }
 
         // 3. GPU Section
-        SummaryDashboardSection(title = stringResource(R.string.summary_gpu)) {
-            val gpuPath = GpuManager.getGpuPath() ?: ""
-            val gpuModelName = when {
-                socName.contains("G4") || gpuPath.contains("1f000000.mali") -> "ARM Mali-G715 (Immortalis)"
-                socName.contains("G3") || gpuPath.contains("1c500000.mali") -> "ARM Mali-G715"
-                socName.contains("gs201") -> "ARM Mali-G710"
-                gpuPath.contains("mali") -> "ARM Mali™ Graphics"
-                gpuPath.contains("kgsl") -> {
-                    val model = GenericManager.readFile("/sys/class/kgsl/kgsl-3d0/gpu_model").trim()
-                    if (model.isNotEmpty()) "Adreno (TM) $model" else "Qualcomm Adreno™"
+        if (hasGpu) {
+            SummaryDashboardSection(title = stringResource(R.string.summary_gpu)) {
+                val gpuPath = GpuManager.getGpuPath() ?: ""
+                val gpuModelName = when {
+                    socName.contains("G4") || gpuPath.contains("1f000000.mali") -> "ARM Mali-G715 (Immortalis)"
+                    socName.contains("G3") || gpuPath.contains("1c500000.mali") -> "ARM Mali-G715"
+                    socName.contains("gs201") -> "ARM Mali-G710"
+                    gpuPath.contains("mali") -> "ARM Mali™ Graphics"
+                    gpuPath.contains("kgsl") -> {
+                        val model = GenericManager.readFile("/sys/class/kgsl/kgsl-3d0/gpu_model").trim()
+                        if (model.isNotEmpty()) "Adreno (TM) $model" else "Qualcomm Adreno™"
+                    }
+                    else -> "Integrated GPU"
                 }
-                else -> "Integrated GPU"
+                
+                Text(
+                    text = gpuModelName,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontStyle = FontStyle.Italic,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                SummaryDashboardRow(stringResource(R.string.summary_renderer), if (gpuPath.contains("mali")) "Mali Graphics" else "Adreno Graphics")
             }
-            
-            Text(
-                text = gpuModelName,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.ExtraBold,
-                fontStyle = FontStyle.Italic,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            
-            Spacer(modifier = Modifier.height(4.dp))
-            SummaryDashboardRow(stringResource(R.string.summary_renderer), if (gpuPath.contains("mali")) "Mali Graphics" else "Adreno Graphics")
         }
 
         // 4. Memory Section
@@ -216,32 +225,36 @@ fun SummaryScreen() {
                 SummaryDashboardRow(stringResource(R.string.summary_physical_ram), "${it.totalMb} MB")
                 SummaryDashboardRow(stringResource(R.string.summary_usage), "${it.usedMb} MB / ${it.totalMb} MB (${it.usedPercent}%)")
                 SummaryDashboardRow(stringResource(R.string.summary_free_mem), "${it.freeMb} MB")
-            } ?: Text("Loading RAM stats...", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
 
         // 5. Power / Battery Section
-        SummaryDashboardSection(title = stringResource(R.string.summary_power_batt).uppercase()) {
-            val battTemp = temperatures.find { it.key == "battery" || it.key == "battery_ps" }?.value ?: 0f
-            if (battTemp > 0) SummaryDashboardRow(stringResource(R.string.summary_batt_temp), String.format(Locale.US, "%.1f°C", battTemp))
-            
-            batteryStats?.let { stats ->
-                val powerValue = if (stats.isCharging) String.format(Locale.US, "%.1f W", stats.powerW) else "0.0 W"
-                SummaryDashboardRow(stringResource(R.string.summary_charge), powerValue)
-
-                val currentVal = if (stats.currentMa > 0) "+${stats.currentMa}" else "${stats.currentMa}"
-                SummaryDashboardRow(stringResource(R.string.batt_current), "$currentVal mA")
+        if (hasBatteryPath) {
+            SummaryDashboardSection(title = stringResource(R.string.summary_power_batt).uppercase()) {
+                val battTemp = temperatures.find { it.key == "battery" || it.key == "battery_ps" }?.value ?: 0f
+                if (battTemp > 0) SummaryDashboardRow(stringResource(R.string.summary_batt_temp), String.format(Locale.US, "%.1f°C", battTemp))
                 
-                SummaryDashboardRow("Status", stats.status)
+                batteryStats?.let { stats ->
+                    val powerValue = if (stats.isCharging) String.format(Locale.US, "%.1f W", stats.powerW) else "0.0 W"
+                    SummaryDashboardRow(stringResource(R.string.summary_charge), powerValue)
+
+                    val currentVal = if (stats.currentMa > 0) "+${stats.currentMa}" else "${stats.currentMa}"
+                    SummaryDashboardRow(stringResource(R.string.batt_current), "$currentVal mA")
+                    
+                    if (stats.status.isNotEmpty() && stats.status != "Unknown") {
+                        SummaryDashboardRow("Status", stats.status)
+                    }
+                }
             }
         }
 
         // 6. ROM / System Details Section
         SummaryDashboardSection(title = stringResource(R.string.header_rom)) {
-            SummaryDashboardRow("Developer", buildType)
-            SummaryDashboardRow(stringResource(R.string.summary_build_type), buildType)
-            SummaryDashboardRow(stringResource(R.string.summary_compilation), compilation)
-            SummaryDashboardRow(stringResource(R.string.summary_android_ver), androidVer)
-            SummaryDashboardRow(stringResource(R.string.summary_kernel_ver), kernelVer)
+            if (buildType.isNotEmpty()) SummaryDashboardRow("Developer", buildType)
+            if (buildType.isNotEmpty()) SummaryDashboardRow(stringResource(R.string.summary_build_type), buildType)
+            if (compilation.isNotEmpty()) SummaryDashboardRow(stringResource(R.string.summary_compilation), compilation)
+            if (androidVer.isNotEmpty()) SummaryDashboardRow(stringResource(R.string.summary_android_ver), androidVer)
+            if (kernelVer.isNotEmpty()) SummaryDashboardRow(stringResource(R.string.summary_kernel_ver), kernelVer)
         }
 
         Spacer(modifier = Modifier.height(80.dp))
@@ -258,7 +271,7 @@ fun SummaryDashboardSection(title: String, content: @Composable ColumnScope.() -
             text = title.uppercase(),
             fontSize = 11.sp,
             fontWeight = FontWeight.Black,
-            color = PixelBlue,
+            color = MaterialTheme.colorScheme.primary,
             letterSpacing = 1.5.sp
         )
         

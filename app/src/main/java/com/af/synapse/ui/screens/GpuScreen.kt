@@ -24,7 +24,6 @@ import com.af.synapse.R
 import com.af.synapse.data.CpuManager
 import com.af.synapse.data.GpuManager
 import com.af.synapse.ui.components.*
-import com.af.synapse.ui.theme.PixelBlue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -165,7 +164,8 @@ fun GpuScreen(isScrolling: () -> Boolean = { false }) {
 @Composable
 fun GpuTileFinal(freqState: State<Long>, history: List<Long>, min: Long, max: Long) {
     val isDark = MaterialTheme.colorScheme.background == Color.Black
-    val accentColor = if (isDark) Color.White else PixelBlue
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val accentColor = if (isDark) Color.White else primaryColor
     val surfaceColor = if (isDark) Color(0xFF0F0F0F) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     val borderColor = Color.White.copy(alpha = 0.05f)
 
@@ -207,7 +207,7 @@ fun GpuTileFinal(freqState: State<Long>, history: List<Long>, min: Long, max: Lo
             modifier = Modifier.padding(16.dp).align(Alignment.TopStart),
             fontSize = 11.sp,
             fontWeight = FontWeight.Black,
-            color = PixelBlue.copy(alpha = 0.7f),
+            color = primaryColor.copy(alpha = 0.7f),
             letterSpacing = 2.sp
         )
     }
@@ -215,6 +215,7 @@ fun GpuTileFinal(freqState: State<Long>, history: List<Long>, min: Long, max: Lo
 
 @Composable
 fun GpuFrequencyDisplay(freqState: State<Long>, modifier: Modifier) {
+    val primaryColor = MaterialTheme.colorScheme.primary
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -230,7 +231,7 @@ fun GpuFrequencyDisplay(freqState: State<Long>, modifier: Modifier) {
             text = "MHz",
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = PixelBlue
+            color = primaryColor
         )
     }
 }

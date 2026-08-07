@@ -23,7 +23,6 @@ import com.af.synapse.R
 import com.af.synapse.data.BatteryManager
 import com.af.synapse.data.GenericManager
 import com.af.synapse.ui.components.*
-import com.af.synapse.ui.theme.PixelBlue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -71,7 +70,7 @@ fun BatteryScreen(isScrolling: () -> Boolean = { false }) {
                     text = stringResource(R.string.batt_level).uppercase(),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Black,
-                    color = PixelBlue,
+                    color = MaterialTheme.colorScheme.primary,
                     letterSpacing = 1.sp
                 )
                 Text(
@@ -154,30 +153,37 @@ fun BatteryScreen(isScrolling: () -> Boolean = { false }) {
             
             val healthPercent = if (displayStats.capacityDesign > 0) (displayStats.capacityActual * 100 / displayStats.capacityDesign).coerceIn(0, 100) else 100
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "${stringResource(R.string.batt_overall_health)}: $healthPercent%", fontWeight = FontWeight.Bold, color = PixelBlue)
+            Text(text = "${stringResource(R.string.batt_overall_health)}: $healthPercent%", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             LinearProgressIndicator(
                 progress = { healthPercent / 100f },
                 modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
-                color = PixelBlue,
+                color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
         }
 
         // 4. Pixel Specific (if on Pixel)
-        if (GenericManager.exists("/sys/devices/platform/google,charger/charge_stop_level")) {
+        val stopPath = "/sys/devices/platform/google,charger/charge_stop_level"
+        val startPath = "/sys/devices/platform/google,charger/charge_start_level"
+        
+        if (GenericManager.exists(stopPath) || GenericManager.exists(startPath)) {
             BatterySection(title = stringResource(R.string.batt_pixel_limits)) {
-                SettingsSeekBar(
-                    title = stringResource(R.string.batt_stop_level),
-                    description = stringResource(R.string.batt_stop_level_desc),
-                    path = "/sys/devices/platform/google,charger/charge_stop_level",
-                    min = 50f, max = 100f, unit = "%"
-                )
-                SettingsSeekBar(
-                    title = stringResource(R.string.batt_start_level),
-                    description = stringResource(R.string.batt_start_level_desc),
-                    path = "/sys/devices/platform/google,charger/charge_start_level",
-                    min = 0f, max = 95f, unit = "%"
-                )
+                if (GenericManager.exists(stopPath)) {
+                    SettingsSeekBar(
+                        title = stringResource(R.string.batt_stop_level),
+                        description = stringResource(R.string.batt_stop_level_desc),
+                        path = stopPath,
+                        min = 50f, max = 100f, unit = "%"
+                    )
+                }
+                if (GenericManager.exists(startPath)) {
+                    SettingsSeekBar(
+                        title = stringResource(R.string.batt_start_level),
+                        description = stringResource(R.string.batt_start_level_desc),
+                        path = startPath,
+                        min = 0f, max = 95f, unit = "%"
+                    )
+                }
             }
         }
 
@@ -209,7 +215,7 @@ fun BatteryCompactWideTile(label: String, value: String, modifier: Modifier = Mo
             text = label.uppercase(),
             fontSize = 10.sp,
             fontWeight = FontWeight.Black,
-            color = PixelBlue.copy(alpha = 0.8f),
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
             modifier = Modifier.align(Alignment.CenterStart)
         )
         
@@ -261,7 +267,7 @@ fun BatteryStatTile(label: String, value: String, modifier: Modifier = Modifier)
             text = label.uppercase(),
             fontSize = 9.sp,
             fontWeight = FontWeight.Black,
-            color = PixelBlue.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
             modifier = Modifier.align(Alignment.TopEnd)
         )
         

@@ -90,9 +90,9 @@ object GpuManager {
         }?.distinct()?.sorted() ?: emptyList()
     }
 
-    fun getMinFrequency(): Long {
-        val path = getGpuPath() ?: return 0L
-        val minPath = when {
+    fun getMinFreqPath(): String? {
+        val path = getGpuPath() ?: return null
+        return when {
             File("$path/hint_min_freq").exists() -> "$path/hint_min_freq"
             File("$path/min_freq").exists() -> "$path/min_freq"
             File("$path/devfreq/min_freq").exists() -> "$path/devfreq/min_freq"
@@ -101,13 +101,11 @@ object GpuManager {
             File("$path/gpu_min_clock").exists() -> "$path/gpu_min_clock"
             else -> null
         }
-        val out = if (minPath != null) Shell.cmd("cat $minPath").exec().out.firstOrNull() else null
-        return formatFreq(out?.toLongOrNull() ?: 0L)
     }
 
-    fun getMaxFrequency(): Long {
-        val path = getGpuPath() ?: return 0L
-        val maxPath = when {
+    fun getMaxFreqPath(): String? {
+        val path = getGpuPath() ?: return null
+        return when {
             File("$path/hint_max_freq").exists() -> "$path/hint_max_freq"
             File("$path/max_freq").exists() -> "$path/max_freq"
             File("$path/devfreq/max_freq").exists() -> "$path/devfreq/max_freq"
@@ -117,34 +115,22 @@ object GpuManager {
             File("$path/gpu_max_clock").exists() -> "$path/gpu_max_clock"
             else -> null
         }
-        val out = if (maxPath != null) Shell.cmd("cat $maxPath").exec().out.firstOrNull() else null
+    }
+
+    fun getMinFrequency(): Long {
+        val path = getMinFreqPath() ?: return 0L
+        val out = Shell.cmd("cat $path").exec().out.firstOrNull()
+        return formatFreq(out?.toLongOrNull() ?: 0L)
+    }
+
+    fun getMaxFrequency(): Long {
+        val path = getMaxFreqPath() ?: return 0L
+        val out = Shell.cmd("cat $path").exec().out.firstOrNull()
         return formatFreq(out?.toLongOrNull() ?: 0L)
     }
 
     fun setFrequency(freqMhz: Long, isMax: Boolean) {
-        val path = getGpuPath() ?: return
-        val freqPath = if (isMax) {
-            when {
-                File("$path/hint_max_freq").exists() -> "$path/hint_max_freq"
-                File("$path/max_freq").exists() -> "$path/max_freq"
-                File("$path/devfreq/max_freq").exists() -> "$path/devfreq/max_freq"
-                File("$path/max_gpuclk").exists() -> "$path/max_gpuclk"
-                File("$path/frequency_limit").exists() -> "$path/frequency_limit"
-                File("$path/gpu_cap_rate").exists() -> "$path/gpu_cap_rate"
-                File("$path/gpu_max_clock").exists() -> "$path/gpu_max_clock"
-                else -> null
-            }
-        } else {
-            when {
-                File("$path/hint_min_freq").exists() -> "$path/hint_min_freq"
-                File("$path/min_freq").exists() -> "$path/min_freq"
-                File("$path/devfreq/min_freq").exists() -> "$path/devfreq/min_freq"
-                File("$path/min_gpuclk").exists() -> "$path/min_gpuclk"
-                File("$path/gpu_floor_rate").exists() -> "$path/gpu_floor_rate"
-                File("$path/gpu_min_clock").exists() -> "$path/gpu_min_clock"
-                else -> null
-            }
-        }
+        val freqPath = if (isMax) getMaxFreqPath() else getMinFreqPath()
         if (freqPath != null) {
             val availFreqs = getAvailableFrequencies()
             val multiplier = when {
@@ -173,9 +159,9 @@ object GpuManager {
         return out?.split(Regex("[\\s,]+"))?.filter { it.isNotBlank() } ?: emptyList()
     }
 
-    fun getCurrentGovernor(): String {
-        val path = getGpuPath() ?: return "unknown"
-        val govPath = when {
+    fun getCurrentGovernorPath(): String? {
+        val path = getGpuPath() ?: return null
+        return when {
             File("$path/governor").exists() -> "$path/governor"
             File("$path/devfreq/governor").exists() -> "$path/devfreq/governor"
             File("$path/pwrscale/trustzone/governor").exists() -> "$path/pwrscale/trustzone/governor"
@@ -183,19 +169,15 @@ object GpuManager {
             File("$path/gpu_governor").exists() -> "$path/gpu_governor"
             else -> null
         }
-        return if (govPath != null) Shell.cmd("cat $govPath").exec().out.firstOrNull() ?: "unknown" else "unknown"
+    }
+
+    fun getCurrentGovernor(): String {
+        val govPath = getCurrentGovernorPath() ?: return "unknown"
+        return Shell.cmd("cat $govPath").exec().out.firstOrNull() ?: "unknown"
     }
 
     fun setGovernor(gov: String) {
-        val path = getGpuPath() ?: return
-        val govPath = when {
-            File("$path/governor").exists() -> "$path/governor"
-            File("$path/devfreq/governor").exists() -> "$path/devfreq/governor"
-            File("$path/pwrscale/trustzone/governor").exists() -> "$path/pwrscale/trustzone/governor"
-            File("$path/power_policy").exists() -> "$path/power_policy"
-            File("$path/gpu_governor").exists() -> "$path/gpu_governor"
-            else -> null
-        }
+        val govPath = getCurrentGovernorPath()
         if (govPath != null) {
             Shell.cmd(
                 "chmod 644 $govPath 2>/dev/null",

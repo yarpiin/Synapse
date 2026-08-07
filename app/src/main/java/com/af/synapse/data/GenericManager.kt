@@ -15,7 +15,9 @@ object GenericManager {
     }
 
     fun readFile(path: String): String {
-        return Shell.cmd("cat \"$path\"").exec().out.firstOrNull() ?: ""
+        if (path.isEmpty()) return ""
+        val result = Shell.cmd("cat \"$path\" 2>/dev/null").exec()
+        return if (result.isSuccess) result.out.firstOrNull() ?: "" else ""
     }
 
     fun writeFile(path: String, value: String) {

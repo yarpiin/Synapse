@@ -11,32 +11,33 @@ object CpuManager {
 
     fun getAvailableClusters(): List<Int> {
         val clusters = mutableListOf<Int>()
-        var i = 0
-        while (i < 8) {
-            if (GenericManager.exists("/sys/devices/system/cpu/cpufreq/policy$i")) {
+        // Optimized for modern multi-cluster SoCs (e.g. Tensor G4)
+        for (i in 0..8) {
+            val path = "/sys/devices/system/cpu/cpufreq/policy$i"
+            if (GenericManager.exists(path)) {
                 clusters.add(i)
-            } else if (i == 0 && GenericManager.exists("/sys/devices/system/cpu/cpu0/cpufreq")) {
-                if (clusters.isEmpty()) clusters.add(0)
             }
-            i++
+        }
+        // Fallback for older devices
+        if (clusters.isEmpty() && GenericManager.exists("/sys/devices/system/cpu/cpu0/cpufreq")) {
+            clusters.add(0)
         }
         return clusters
     }
 
-    fun getClusterCpus(policyIndex: Int): List<Int> {
-        val policyPath = "/sys/devices/system/cpu/cpufreq/policy$policyIndex/affected_cpus"
-        val cpuPath = "/sys/devices/system/cpu/cpu$policyIndex/cpufreq/affected_cpus"
-        
-        val out = Shell.cmd("cat $policyPath 2>/dev/null").exec().out.firstOrNull()
-            ?: Shell.cmd("cat $cpuPath 2>/dev/null").exec().out.firstOrNull()
-            
-        return if (out != null) {
+    fun getClusterCpus(policyId: Int): List<Int> {
+        val path = "/sys/devices/system/cpu/cpufreq/policy$policyId/affected_cpus"
+        val out = Shell.cmd("cat \"$path\" 2>/dev/null").exec().out.firstOrNull()
+        return if (!out.isNullOrBlank()) {
             parseCpuList(out)
         } else {
-            if (policyIndex == 0) {
-                val allCpus = Shell.cmd("ls /sys/devices/system/cpu/ | grep -E 'cpu[0-9]+'").exec().out
-                allCpus.mapNotNull { it.removePrefix("cpu").toIntOrNull() }.sorted()
-            } else emptyList()
+            // Hardcoded fallback for known Tensor layouts if path fails
+            when(policyId) {
+                0 -> listOf(0, 1, 2, 3)
+                4 -> listOf(4, 5, 6)
+                7 -> listOf(7)
+                else -> listOf(policyId)
+            }
         }
     }
 
@@ -60,99 +61,84 @@ object CpuManager {
         while (true) {
             val freqs = mutableMapOf<Int, Long>()
             for (id in cpuIds) {
-                try {
-                    val out = Shell.cmd("cat /sys/devices/system/cpu/cpu$id/cpufreq/scaling_cur_freq 2>/dev/null").exec().out.firstOrNull()
-                    freqs[id] = (out?.toLongOrNull() ?: 0L) / 1000
-                } catch (e: Exception) {
-                    freqs[id] = 0L
-                }
+                val out = Shell.cmd("cat /sys/devices/system/cpu/cpu$id/cpufreq/scaling_cur_freq 2>/dev/null").exec().out.firstOrNull()
+                freqs[id] = (out?.toLongOrNull() ?: 0L) / 1000
             }
             emit(freqs)
             delay(500)
         }
     }.flowOn(Dispatchers.IO)
 
-    fun getCurrentFrequencies(cpuIds: List<Int>): Map<Int, Long> {
-        val freqs = mutableMapOf<Int, Long>()
-        for (id in cpuIds) {
-            val out = Shell.cmd("cat /sys/devices/system/cpu/cpu$id/cpufreq/scaling_cur_freq 2>/dev/null").exec().out.firstOrNull()
-            freqs[id] = (out?.toLongOrNull() ?: 0L) / 1000
-        }
-        return freqs
-    }
-
-    fun getAvailableFrequencies(cpuId: Int): List<Long> {
-        val out = Shell.cmd("cat /sys/devices/system/cpu/cpu$cpuId/cpufreq/scaling_available_frequencies 2>/dev/null").exec().out.firstOrNull()
+    fun getAvailableFrequencies(policyId: Int): List<Long> {
+        val path = "/sys/devices/system/cpu/cpufreq/policy$policyId/scaling_available_frequencies"
+        val out = Shell.cmd("cat \"$path\" 2>/dev/null").exec().out.firstOrNull()
         return out?.split(" ")?.filter { it.isNotBlank() }?.mapNotNull { it.toLongOrNull()?.div(1000) }?.sorted() ?: emptyList()
     }
 
-    fun getMinFrequency(cpuId: Int): Long {
-        val out = Shell.cmd("cat /sys/devices/system/cpu/cpu$cpuId/cpufreq/scaling_min_freq 2>/dev/null").exec().out.firstOrNull()
+    fun getMinFrequency(policyId: Int): Long {
+        val path = "/sys/devices/system/cpu/cpufreq/policy$policyId/scaling_min_freq"
+        val out = Shell.cmd("cat \"$path\" 2>/dev/null").exec().out.firstOrNull()
         return (out?.toLongOrNull() ?: 0L) / 1000
     }
 
-    fun getMaxFrequency(cpuId: Int): Long {
-        val out = Shell.cmd("cat /sys/devices/system/cpu/cpu$cpuId/cpufreq/scaling_max_freq 2>/dev/null").exec().out.firstOrNull()
+    fun getMaxFrequency(policyId: Int): Long {
+        val path = "/sys/devices/system/cpu/cpufreq/policy$policyId/scaling_max_freq"
+        val out = Shell.cmd("cat \"$path\" 2>/dev/null").exec().out.firstOrNull()
         return (out?.toLongOrNull() ?: 0L) / 1000
     }
 
-    fun setFrequency(cpuIds: List<Int>, freqMhz: Long, isMax: Boolean) {
-        val path = if (isMax) "scaling_max_freq" else "scaling_min_freq"
+    fun setFrequency(policyId: Int, freqMhz: Long, isMax: Boolean) {
+        val fileName = if (isMax) "scaling_max_freq" else "scaling_min_freq"
+        val path = "/sys/devices/system/cpu/cpufreq/policy$policyId/$fileName"
         val value = (freqMhz * 1000).toString()
-        val commands = mutableListOf<String>()
-        for (id in cpuIds) {
-            val fullPath = "/sys/devices/system/cpu/cpu$id/cpufreq/$path"
-            commands.add("chmod 644 $fullPath 2>/dev/null")
-            commands.add("echo \"$value\" > \"$fullPath\"")
-            SettingsStore.trackSetting(fullPath, value)
-        }
-        Shell.cmd(*commands.toTypedArray()).exec()
+        
+        Shell.cmd(
+            "chmod 644 \"$path\" 2>/dev/null",
+            "echo \"$value\" > \"$path\""
+        ).exec()
+        SettingsStore.trackSetting(path, value)
     }
 
-    fun getAvailableGovernors(cpuId: Int): List<String> {
-        val out = Shell.cmd("cat /sys/devices/system/cpu/cpu$cpuId/cpufreq/scaling_available_governors 2>/dev/null").exec().out.firstOrNull()
+    fun getAvailableGovernors(policyId: Int): List<String> {
+        val path = "/sys/devices/system/cpu/cpufreq/policy$policyId/scaling_available_governors"
+        val out = Shell.cmd("cat \"$path\" 2>/dev/null").exec().out.firstOrNull()
         return out?.split(" ")?.filter { it.isNotBlank() } ?: listOf("schedutil")
     }
 
-    fun getCurrentGovernor(cpuId: Int): String {
-        return Shell.cmd("cat /sys/devices/system/cpu/cpu$cpuId/cpufreq/scaling_governor 2>/dev/null").exec().out.firstOrNull() ?: "unknown"
+    fun getCurrentGovernor(policyId: Int): String {
+        val path = "/sys/devices/system/cpu/cpufreq/policy$policyId/scaling_governor"
+        return Shell.cmd("cat \"$path\" 2>/dev/null").exec().out.firstOrNull() ?: "unknown"
     }
 
-    fun setGovernor(cpuIds: List<Int>, governor: String) {
-        val commands = mutableListOf<String>()
-        for (id in cpuIds) {
-            val fullPath = "/sys/devices/system/cpu/cpu$id/cpufreq/scaling_governor"
-            commands.add("chmod 644 $fullPath 2>/dev/null")
-            commands.add("echo \"$governor\" > \"$fullPath\"")
-            SettingsStore.trackSetting(fullPath, governor)
-        }
-        Shell.cmd(*commands.toTypedArray()).exec()
-        Thread.sleep(50)
+    fun setGovernor(policyId: Int, governor: String) {
+        val path = "/sys/devices/system/cpu/cpufreq/policy$policyId/scaling_governor"
+        Shell.cmd(
+            "chmod 644 \"$path\" 2>/dev/null",
+            "echo \"$governor\" > \"$path\""
+        ).exec()
+        SettingsStore.trackSetting(path, governor)
     }
 
-    fun getGovernorTunables(cpuId: Int): List<GovernorTunable> {
-        val gov = getCurrentGovernor(cpuId)
-        val paths = listOf(
-            "/sys/devices/system/cpu/cpufreq/policy$cpuId/$gov",
-            "/sys/devices/system/cpu/cpufreq/$gov",
-            "/sys/devices/system/cpu/cpu$cpuId/cpufreq/$gov"
-        )
+    fun getGovernorTunables(policyId: Int): List<GovernorTunable> {
+        val gov = getCurrentGovernor(policyId)
+        val path = "/sys/devices/system/cpu/cpufreq/policy$policyId/$gov"
         
-        var dirPath: String? = null
-        for (p in paths) {
-            if (GenericManager.isDirectory(p)) {
-                dirPath = p
-                break
-            }
-        }
+        if (!GenericManager.isDirectory(path)) return emptyList()
 
-        if (dirPath == null) return emptyList()
-
-        val files = Shell.cmd("ls $dirPath").exec().out
+        val files = Shell.cmd("ls \"$path\"").exec().out
         val exclude = listOf("boostpulse", "cpu_utilization", "multi_phase_freq_tbl", "profile", "profile_list", "up_threshold_h", "up_threshold_l", "version_profiles")
+        
+        // Safety filter for sched_pixel to prevent screen-off issues
+        val whitelist = if (gov.contains("sched_pixel", true)) {
+            listOf("down_rate_limit_scale_pow", "down_rate_limit_ua", "up_rate_limit_us", "down_rate_limit_us")
+        } else null
 
-        return files.filter { it.isNotBlank() && !exclude.contains(it) }.map { fileName ->
-            val fullPath = "$dirPath/$fileName"
+        return files.filter { fileName ->
+            fileName.isNotBlank() &&
+            !exclude.contains(fileName) && 
+            (whitelist == null || whitelist.contains(fileName))
+        }.map { fileName ->
+            val fullPath = "$path/$fileName"
             GovernorTunable(
                 name = fileName,
                 value = Shell.cmd("cat \"$fullPath\"").exec().out.firstOrNull() ?: "",
@@ -177,10 +163,7 @@ object CpuManager {
             "/sys/kernel/fp_boost",
             "/sys/class/kgsl/kgsl-3d0/devfreq/adrenoboost"
         )
-        for (path in paths) {
-            if (GenericManager.exists(path)) return true
-        }
-        return false
+        return paths.any { GenericManager.exists(it) }
     }
 }
 

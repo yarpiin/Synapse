@@ -24,8 +24,13 @@ object BatteryManager {
         val isCharging: Boolean
     )
 
+    private fun getBatteryPath(): String {
+        val paths = listOf("/sys/class/power_supply/battery", "/sys/class/power_supply/google_battery")
+        return paths.find { GenericManager.exists(it) } ?: "/sys/class/power_supply/battery"
+    }
+
     fun getBatteryStats(): BatteryStats {
-        val path = "/sys/class/power_supply/battery"
+        val path = getBatteryPath()
         
         val level = GenericManager.readFile("$path/capacity").toIntOrNull() ?: 0
         val temp = (GenericManager.readFile("$path/temp").toFloatOrNull() ?: 0f) / 10f

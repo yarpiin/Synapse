@@ -24,8 +24,8 @@ import androidx.compose.ui.unit.sp
 import com.af.synapse.R
 import com.af.synapse.data.CpuManager
 import com.af.synapse.data.GovernorTunable
+import com.af.synapse.data.MonitorManager
 import com.af.synapse.ui.components.*
-import com.af.synapse.ui.theme.PixelBlue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -39,6 +39,7 @@ fun CpuClusterPage(
 ) {
     val cpuIds = remember(policyId) { CpuManager.getClusterCpus(policyId) }
     val scope = rememberCoroutineScope()
+    val temperatures by MonitorManager.temperatures.collectAsState()
     
     val freqStates = remember(cpuIds) { cpuIds.associateWith { mutableLongStateOf(0L) } }
     val historyStates = remember(cpuIds) { cpuIds.associateWith { mutableStateListOf<Long>() } }
@@ -50,31 +51,33 @@ fun CpuClusterPage(
     var currentGov by remember { mutableStateOf("") }
     var tunables by remember { mutableStateOf(emptyList<GovernorTunable>()) }
 
-    LaunchedEffect(cpuIds) {
+    // Unified Refresh Function
+    val refreshData = suspend {
+        val freqs = CpuManager.getAvailableFrequencies(policyId)
+        val govs = CpuManager.getAvailableGovernors(policyId)
+        val min = CpuManager.getMinFrequency(policyId)
+        val max = CpuManager.getMaxFrequency(policyId)
+        val gov = CpuManager.getCurrentGovernor(policyId)
+        val t = CpuManager.getGovernorTunables(policyId)
+        
+        withContext(Dispatchers.Main) {
+            availableFreqs = freqs
+            availableGovs = govs
+            minFreq = min
+            maxFreq = max
+            currentGov = gov
+            tunables = t
+        }
+    }
+
+    // Initial load and refresh on tab entry
+    LaunchedEffect(policyId) {
         withContext(Dispatchers.IO) {
-            val firstCpu = cpuIds.firstOrNull() ?: 0
-            val freqs = CpuManager.getAvailableFrequencies(firstCpu)
-            val govs = CpuManager.getAvailableGovernors(firstCpu)
-            val min = CpuManager.getMinFrequency(firstCpu)
-            val max = CpuManager.getMaxFrequency(firstCpu)
-            val gov = CpuManager.getCurrentGovernor(firstCpu)
-            val t = CpuManager.getGovernorTunables(firstCpu)
+            refreshData()
             
-            val firstRead = CpuManager.getCurrentFrequencies(cpuIds)
-
-            withContext(Dispatchers.Main) {
-                availableFreqs = freqs
-                availableGovs = govs
-                minFreq = min
-                maxFreq = max
-                currentGov = gov
-                tunables = t
-                firstRead.forEach { (id, value) -> freqStates[id]?.longValue = value }
-            }
-
+            // Continuous live frequency update
             CpuManager.getCpuFrequencyFlow(cpuIds).collect { newFreqs ->
                 if (isScrolling()) return@collect
-                
                 withContext(Dispatchers.Main) {
                     newFreqs.forEach { (id, value) ->
                         freqStates[id]?.longValue = value
@@ -132,7 +135,13 @@ fun CpuClusterPage(
                 description = stringResource(R.string.cpu_min_freq_desc),
                 currentValue = minFreq,
                 values = availableFreqs,
-                onValueChange = { minFreq = it; CpuManager.setFrequency(cpuIds, it, false) }
+                onValueChange = { selected -> 
+                    scope.launch(Dispatchers.IO) { 
+                        CpuManager.setFrequency(policyId, selected, false)
+                        delay(150)
+                        refreshData()
+                    }
+                }
             )
 
             CommonFrequencySeekBar(
@@ -140,7 +149,13 @@ fun CpuClusterPage(
                 description = stringResource(R.string.cpu_max_freq_desc),
                 currentValue = maxFreq,
                 values = availableFreqs,
-                onValueChange = { maxFreq = it; CpuManager.setFrequency(cpuIds, it, true) }
+                onValueChange = { selected -> 
+                    scope.launch(Dispatchers.IO) { 
+                        CpuManager.setFrequency(policyId, selected, true)
+                        delay(150)
+                        refreshData()
+                    }
+                }
             )
         }
 
@@ -151,12 +166,10 @@ fun CpuClusterPage(
                 currentValue = currentGov,
                 options = availableGovs,
                 onSelect = { gov ->
-                    scope.launch {
-                        withContext(Dispatchers.IO) { CpuManager.setGovernor(cpuIds, gov) }
-                        currentGov = gov
+                    scope.launch(Dispatchers.IO) {
+                        CpuManager.setGovernor(policyId, gov)
                         delay(250)
-                        val newTunables = withContext(Dispatchers.IO) { CpuManager.getGovernorTunables(cpuIds.firstOrNull() ?: 0) }
-                        tunables = newTunables
+                        refreshData()
                     }
                 }
             )
@@ -166,22 +179,10 @@ fun CpuClusterPage(
             Text(stringResource(R.string.cpu_tunables), fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
             tunables.forEach { tunable ->
                 SettingsTunableItem(tunable) { newVal ->
-                    scope.launch {
-                        withContext(Dispatchers.IO) { CpuManager.setTunable(tunable.path, newVal) }
+                    scope.launch(Dispatchers.IO) { 
+                        CpuManager.setTunable(tunable.path, newVal)
                         delay(200)
-                        withContext(Dispatchers.IO) {
-                            val firstCpu = cpuIds.firstOrNull() ?: 0
-                            val min = CpuManager.getMinFrequency(firstCpu)
-                            val max = CpuManager.getMaxFrequency(firstCpu)
-                            val gov = CpuManager.getCurrentGovernor(firstCpu)
-                            val t = CpuManager.getGovernorTunables(firstCpu)
-                            withContext(Dispatchers.Main) {
-                                minFreq = min
-                                maxFreq = max
-                                currentGov = gov
-                                tunables = t
-                            }
-                        }
+                        refreshData()
                     }
                 }
             }
@@ -200,10 +201,11 @@ fun RowScope.CpuTileFinal(
     max: Long
 ) {
     val isDark = MaterialTheme.colorScheme.background == Color.Black
-    val accentColor = if (isDark) Color.White else PixelBlue
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val accentColor = if (isDark) Color.White else primaryColor
     val surfaceColor = if (isDark) Color(0xFF0F0F0F) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     val borderColor = Color.White.copy(alpha = 0.05f)
-    val labelColor = PixelBlue
+    val labelColor = primaryColor
 
     Box(
         modifier = Modifier
@@ -244,21 +246,13 @@ fun RowScope.CpuTileFinal(
             color = labelColor
         )
         
-        FrequencyValue(
-            freqState = freqState,
+        Text(
+            text = if (freqState.value > 0) "${freqState.value}" else "-",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Black,
+            fontStyle = FontStyle.Italic,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(10.dp).align(Alignment.BottomEnd)
         )
     }
-}
-
-@Composable
-fun FrequencyValue(freqState: State<Long>, modifier: Modifier) {
-    Text(
-        text = if (freqState.value > 0) "${freqState.value}" else "-",
-        fontSize = 22.sp,
-        fontWeight = FontWeight.Black,
-        fontStyle = FontStyle.Italic,
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = modifier
-    )
 }

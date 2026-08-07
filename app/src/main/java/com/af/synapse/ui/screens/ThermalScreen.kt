@@ -25,7 +25,6 @@ import com.af.synapse.data.MonitorManager
 import com.af.synapse.data.ThermalManager
 import com.af.synapse.ui.components.SettingsSeekBar
 import com.af.synapse.ui.components.SettingsSwitch
-import com.af.synapse.ui.theme.PixelBlue
 import java.util.Locale
 
 @Composable
@@ -140,7 +139,7 @@ fun RowScope.TemperatureTileOptimized(sensor: ThermalManager.TemperatureSensor) 
             text = label.uppercase(),
             fontSize = 9.sp,
             fontWeight = FontWeight.Black,
-            color = PixelBlue,
+            color = colorScheme.primary,
             modifier = Modifier.align(Alignment.TopEnd)
         )
         

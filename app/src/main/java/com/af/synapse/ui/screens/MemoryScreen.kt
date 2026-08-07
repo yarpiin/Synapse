@@ -25,7 +25,6 @@ import com.af.synapse.data.MonitorManager
 import com.af.synapse.ui.components.SettingsDropdown
 import com.af.synapse.ui.components.SettingsSeekBar
 import com.af.synapse.ui.components.SettingsSwitch
-import com.af.synapse.ui.theme.PixelBlue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -70,6 +69,7 @@ fun MemoryScreen(isScrolling: () -> Boolean = { false }) {
     val displayZram = localZramStats ?: MemoryManager.ZRamStats(0, 0, 0)
 
     if (isApplyingZram) {
+        val primaryColor = MaterialTheme.colorScheme.primary
         AlertDialog(
             onDismissRequest = { },
             confirmButton = { },
@@ -78,7 +78,7 @@ fun MemoryScreen(isScrolling: () -> Boolean = { false }) {
                     horizontalAlignment = Alignment.CenterHorizontally, 
                     modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
                 ) {
-                    CircularProgressIndicator(color = PixelBlue)
+                    CircularProgressIndicator(color = primaryColor)
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
                         text = stringResource(R.string.zram_applying),
@@ -111,11 +111,12 @@ fun MemoryScreen(isScrolling: () -> Boolean = { false }) {
         RamDisplayRow(ramStats)
 
         Column {
+            val primaryColor = MaterialTheme.colorScheme.primary
             Text(
                 text = stringResource(R.string.mem_zram_usage), 
                 fontWeight = FontWeight.Black, 
                 fontSize = 12.sp,
-                color = PixelBlue,
+                color = primaryColor,
                 letterSpacing = 1.sp
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -125,7 +126,7 @@ fun MemoryScreen(isScrolling: () -> Boolean = { false }) {
                     .fillMaxWidth()
                     .height(24.dp)
                     .clip(RoundedCornerShape(12.dp)),
-                color = PixelBlue,
+                color = primaryColor,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -216,7 +217,7 @@ fun RamDisplayRow(ramStats: MemoryManager.RamStats?) {
                 text = stringResource(R.string.summary_ram).uppercase(),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Black,
-                color = PixelBlue,
+                color = MaterialTheme.colorScheme.primary,
                 letterSpacing = 1.sp
             )
             val totalGb = (ramStats?.totalMb?.toDouble() ?: 0.0) / 1024.0
@@ -261,6 +262,7 @@ fun DynamicZRamSeekBar(
 ) {
     var sliderValue by remember(currentValueMb) { mutableFloatStateOf(currentValueMb.toFloat()) }
 
+    val primaryColor = MaterialTheme.colorScheme.primary
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = stringResource(R.string.mem_zram_size), 
@@ -284,8 +286,8 @@ fun DynamicZRamSeekBar(
             valueRange = 0f..maxMb.toFloat(),
             steps = if (maxMb >= 128) (maxMb / 128).toInt() - 1 else 0,
             colors = SliderDefaults.colors(
-                thumbColor = PixelBlue,
-                activeTrackColor = PixelBlue,
+                thumbColor = primaryColor,
+                activeTrackColor = primaryColor,
                 inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
             )
         )
@@ -302,7 +304,7 @@ fun DynamicZRamSeekBar(
             textAlign = TextAlign.Center,
             fontWeight = FontWeight.Bold,
             fontStyle = FontStyle.Italic,
-            color = MaterialTheme.colorScheme.primary
+            color = primaryColor
         )
     }
 }
@@ -332,7 +334,7 @@ fun RamStatTile(label: String, percentage: Int, valueMb: Long) {
             text = label.uppercase(),
             fontSize = 9.sp,
             fontWeight = FontWeight.Black,
-            color = PixelBlue.copy(alpha = 0.7f),
+            color = colorScheme.primary.copy(alpha = 0.7f),
             modifier = Modifier.align(Alignment.TopEnd)
         )
         
